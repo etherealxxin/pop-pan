@@ -480,8 +480,8 @@ function onMotion(e) {
   const sy = -(-ax * Math.sin(ang) + ay * Math.cos(ang));
   const m = Math.hypot(ax, ay, az);
 
-  if (st.phase === 'ready' && m > 12) start();
-  if (st.phase === 'cooking') st.shake = Math.min(1, st.shake + Math.max(0, m - 2.5) * 0.2 * dt);
+  if (st.phase === 'ready' && m > 9) start();
+  if (st.phase === 'cooking') st.shake = Math.min(1, st.shake + Math.max(0, m - 1.5) * 0.35 * dt);
 
   motion.tx = Math.max(-28, Math.min(28, sx * 2.2));
   motion.ty = Math.max(-28, Math.min(28, sy * 2.2));
@@ -704,13 +704,13 @@ function fitTitle() {
 
 /* ---------- input ---------- */
 let drag = null;
-function movePan(dx, dy, addShake = true) {
+function movePan(dx, dy) {
   const nx = Math.max(24, Math.min(76, st.pan.x + dx));
   const ny = Math.max(46, Math.min(104, st.pan.y + dy));
   const dist = Math.hypot(nx - st.pan.x, ny - st.pan.y);
   st.frameDx += nx - st.pan.x;
   st.pan.x = nx; st.pan.y = ny;
-  if (addShake) st.shake = Math.min(1, st.shake + dist / 30);
+  st.shake = Math.min(1, st.shake + dist / 30);
 }
 app.addEventListener('pointerdown', e => {
   if (e.target.closest('button,#topbar')) return;
@@ -725,7 +725,7 @@ app.addEventListener('pointermove', e => {
   if (!drag || e.pointerId !== drag.id || st.phase !== 'cooking') return;
   const dx = (e.clientX - drag.x) / L.s, dy = (e.clientY - drag.y) / L.s;
   drag.x = e.clientX; drag.y = e.clientY;
-  movePan(dx, dy, !motion.on);   // with motion on, only the phone shakes the pan
+  movePan(dx, dy);
 });
 const endDrag = e => { if (drag && e.pointerId === drag.id) { drag = null; app.classList.remove('dragging'); } };
 app.addEventListener('pointerup', endDrag);

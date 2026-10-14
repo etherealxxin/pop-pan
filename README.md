@@ -1,4 +1,4 @@
-# Popcorn Game
+# Pop Pan
 
 Shake the pan over the fire and pop at least 70% of the kernels before time runs out — without burning them.
 
