@@ -1,0 +1,977 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Pop Pan</title>
+<meta name="theme-color" content="#ed743c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ed743c'/%3E%3Cpath transform='translate(6 6) scale(1.4)' d='M6.43.42c.3-.55 1.1-.55 1.4 0l2.02 3.68c.07.14.18.25.32.32l3.68 2.01c.55.3.55 1.1 0 1.4L10.17 9.85a.8.8 0 0 0-.32.32l-2.01 3.68c-.3.55-1.1.55-1.4 0L4.42 10.17a.8.8 0 0 0-.32-.32L.42 7.83c-.55-.3-.55-1.1 0-1.4L4.1 4.42a.8.8 0 0 0 .32-.32z' fill='%23f9ffca'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bowlby+One&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/static/woff2/SUIT.css" rel="stylesheet">
+<style>
+:root{
+  --bg:#ed743c;
+  --cream:#f9ffca;
+  --ink:#23007d;
+  --green:#2ae420;
+  --red:#ff616b;
+  --pink:#e254ff;
+  --track:rgba(0,51,179,.1);
+  --rim:#93dbff;
+  --pan:#23007d;
+  --handle:#efefef;
+  --glow:#f34d00;
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  --soft:cubic-bezier(.22,1,.36,1);
+  --display:'Bowlby One',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);overflow:hidden;overscroll-behavior:none}
+body{font-family:'SUIT',system-ui,-apple-system,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+img{-webkit-user-drag:none;user-drag:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+#app{position:fixed;inset:0;overflow:hidden;touch-action:none}
+
+/* ---------- display type ---------- */
+.display{font-family:var(--display);font-weight:400}
+
+/* ---------- field ---------- */
+#field{position:absolute;inset:0;transition:filter .5s var(--soft),transform .5s var(--soft)}
+#app.result #field{filter:blur(4px);transform:scale(.985)}
+
+#flames{position:absolute;left:0;top:0;width:0;height:0;will-change:transform}
+.flame{position:absolute;left:-20px;top:-20px;width:40px;height:40px}
+.flame i{display:block;width:40px;height:40px;background:var(--ember) center/contain no-repeat;
+  transform:scale(0);transform-origin:50% 75%;opacity:0;
+  transition:transform .45s var(--spring),opacity .3s ease;filter:drop-shadow(0 0 6px rgba(255,214,70,.55))}
+#flames.on .flame i{transform:scale(1);opacity:1;animation:flicker .9s ease-in-out infinite alternate}
+@keyframes flicker{
+  0%{transform:scale(1,1)}
+  40%{transform:scale(.94,1.1)}
+  100%{transform:scale(1.04,.9)}
+}
+
+#pan{position:absolute;left:0;top:0;width:270px;height:371px;transform-origin:135px 135px;will-change:transform}
+.neck,.ps-neck{position:absolute;left:0;top:0;width:270px;height:371px;overflow:visible;pointer-events:none}
+.neck path,.ps-neck path{fill:var(--rim)}
+.ps-neck{filter:drop-shadow(0 20px 20px rgba(243,77,0,.5))}
+.grip,.ps-grip{position:absolute;left:117px;top:281px;width:36px;height:90px;border-radius:10px 10px 16px 16px;background:var(--handle)}
+.rim,.ps-rim{position:absolute;left:1px;top:1px;width:268px;height:268px;border-radius:50%;background:var(--rim)}
+.ps-grip,.ps-rim{box-shadow:0 20px 40px rgba(243,77,0,.5)}
+.inner{position:absolute;left:27px;top:27px;width:216px;height:216px;border-radius:50%;z-index:0;--heat:0;
+  background:radial-gradient(circle at 50% 50%,rgba(255,97,107,calc(.75 * var(--heat))) 0%,rgba(226,40,90,calc(.45 * var(--heat))) 45%,rgba(35,0,125,0) 75%),var(--pan)}
+#items{z-index:1}
+#items{position:absolute;left:0;top:0;width:270px;height:270px}
+.item{position:absolute;left:0;top:0;will-change:transform}
+.item.popped{z-index:1}   /* popcorn rests on top of unpopped kernels */
+.item img{display:block;width:100%;height:100%;pointer-events:none}
+.kernel{width:18px;height:18px}
+.kernel.in img{animation:dropIn .5s var(--spring) both}
+@keyframes dropIn{from{opacity:0;transform:translateY(-14px) scale(.4)}to{opacity:1;transform:none}}
+.pc{position:relative;width:100%;height:100%}
+.pc img{position:absolute;inset:0}
+.pc .b{opacity:var(--burn,0)}
+.pc.pop{animation:popIn .42s var(--spring) both}
+@keyframes popIn{0%{transform:scale(.25) rotate(-20deg)}60%{transform:scale(1.18) rotate(6deg)}100%{transform:scale(1) rotate(0)}}
+.puff{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;border:3px solid rgba(255,254,250,.9);animation:puff .45s var(--soft) forwards;pointer-events:none}
+@keyframes puff{from{transform:scale(.3);opacity:1}to{transform:scale(1.4);opacity:0}}
+.item.spill{transition:opacity .7s ease}
+
+/* ---------- HUD ---------- */
+.card{position:relative;background:var(--cream);border-radius:28px;box-shadow:inset 0 1px 8px rgba(255,255,255,.4)}
+#hud{position:absolute;left:0;right:0;top:0;pointer-events:none;transition:opacity .3s ease;filter:drop-shadow(0 20px 20px var(--glow))}
+#topbar{position:absolute;top:calc(20px + env(safe-area-inset-top));left:50%;height:54px;width:80px;transform:translate(-50%,-140%);
+  display:flex;align-items:center;justify-content:center;padding:0 16px;pointer-events:auto;
+  transition:width .6s var(--spring),transform .6s var(--spring)}
+#app.ready #topbar,#app.playing #topbar,#app.result #topbar{transform:translate(-50%,0)}
+#app.playing #topbar,#app.result #topbar{width:calc(100% - 40px)}
+#app.ready #topbar{cursor:pointer}
+@media (hover:hover){#app.playing #field{cursor:grab}#app.playing.dragging #field{cursor:grabbing}}
+#app.ready #topbar:active{transform:translate(-50%,0) scale(.94)}
+.lv{display:flex;align-items:center;gap:2px;font-weight:900;font-size:16px;line-height:18px;letter-spacing:-.32px;white-space:nowrap}
+.lv svg{width:16px;height:16px;padding:.87px;transition:transform .5s var(--spring)}
+#app.ready .lv svg{animation:twinkle 2.4s ease-in-out infinite}
+@keyframes twinkle{0%,100%{transform:rotate(0) scale(1)}50%{transform:rotate(90deg) scale(1.15)}}
+.lv.spin svg{animation:spin .5s var(--spring)!important}
+@keyframes spin{from{transform:rotate(-180deg) scale(.5)}to{transform:rotate(0) scale(1)}}
+#count{position:absolute;right:16px;font-variant-numeric:tabular-nums;top:50%;transform:translateY(-50%);font-weight:500;font-size:14px;line-height:18px;letter-spacing:-.28px;opacity:0;transition:opacity .3s ease .2s;white-space:nowrap}
+#app.playing #count,#app.result #count{opacity:.8}
+#app.playing .lv,#app.result .lv{margin-right:auto}
+
+#stats{position:absolute;left:calc(20px + env(safe-area-inset-left));right:calc(20px + env(safe-area-inset-right));top:calc(94px + env(safe-area-inset-top));display:flex;gap:10px}
+.stat{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:16px 16px 20px;text-align:center;
+  opacity:0;transform:translateY(-24px) scale(.92);transition:transform .55s var(--spring),opacity .35s ease}
+#app.ready .stat,#app.playing .stat,#app.result .stat{opacity:1;transform:none}
+.stat:nth-child(2){transition-delay:.06s}
+.stat:nth-child(3){transition-delay:.12s}
+.stat .k{font-weight:500;font-size:14px;line-height:18px;letter-spacing:-.28px;opacity:.8;width:100%}
+.stat .v{font-variant-numeric:tabular-nums;font-weight:700;font-size:16px;line-height:18px;letter-spacing:-.32px;width:100%;white-space:nowrap;display:inline-block}
+.bar{position:relative;width:100%;height:12px;margin-top:6px;border-radius:8px;background:var(--track);overflow:hidden}
+.bar i{position:absolute;inset:0;transform-origin:0 50%;transform:scaleX(0);transition:transform .14s linear;border-radius:0}
+.bar.heat i{background:var(--red)}
+.bar.shake i{background:var(--green)}
+.bar.burn i{background:var(--pink)}
+.bar b{position:absolute;top:2px;bottom:2px;width:2px;margin-left:-1px;background:var(--ink);border-radius:1px;opacity:.45;transition:left .4s var(--soft)}
+.stat.alarm{animation:wobble .5s ease-in-out infinite}
+@keyframes wobble{0%,100%{rotate:0deg}25%{rotate:-2.5deg}75%{rotate:2.5deg}}
+
+/* ---------- bottom ---------- */
+#timer{position:absolute;left:calc(20px + env(safe-area-inset-left));bottom:calc(20px + env(safe-area-inset-bottom));min-width:62px;text-align:center;font-variant-numeric:tabular-nums;padding:16px;border-radius:28px;background:rgba(255,255,255,.4);box-shadow:inset 0 1px 8px rgba(255,255,255,.4);
+  font-weight:900;font-size:16px;line-height:18px;letter-spacing:-.32px;white-space:nowrap;
+  opacity:0;transform:translateY(30px);transition:transform .55s var(--spring),opacity .3s ease,background-color .3s ease,color .3s ease}
+#app.ready #timer,#app.playing #timer,#app.result #timer{opacity:1;transform:none}
+#timer.urgent{background:var(--red);color:var(--cream)}
+#sound{position:absolute;right:calc(20px + env(safe-area-inset-right));bottom:calc(20px + env(safe-area-inset-bottom));width:50px;height:50px;border-radius:28px;display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.4);box-shadow:inset 0 1px 8px rgba(255,255,255,.4);color:var(--ink);transition:transform .25s var(--spring)}
+#sound.hide{opacity:0;visibility:hidden;transform:translateY(30px)}
+#sound{transition:transform .55s var(--spring),opacity .3s ease}
+#sound:active{transform:scale(.9)}
+#sound:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+#sound svg{width:22px;height:22px}
+#sound .x{display:none}
+#sound.off .x{display:inline}
+#sound.off .w{display:none}
+
+/* same size and spot as the title's "Tap to start" */
+#msg{position:absolute;left:0;right:0;bottom:calc(35px + env(safe-area-inset-bottom));line-height:20px;text-align:center;pointer-events:none}
+#msg span{color:#fff;font-weight:900;font-size:16px;letter-spacing:-.32px;white-space:nowrap}
+#msg span.out{visibility:hidden}
+
+/* ---------- title ---------- */
+#title{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:opacity .45s ease}
+#title h1{font-family:'Bowlby One',sans-serif;font-weight:400;color:var(--cream);font-size:min(180px,50vw);line-height:1;white-space:nowrap;text-align:center;margin-top:0;
+  transition:transform .55s var(--soft),opacity .4s ease}
+#title h1 .w{display:block}
+#title h1 .c{display:inline-block;animation:letterIn .7s var(--spring) both}
+#app.fontwait #title h1 .c{animation-play-state:paused}
+@keyframes letterIn{0%{opacity:0;transform:translateY(-60px) rotate(-8deg) scale(.7)}100%{opacity:1;transform:none}}
+#hint{position:absolute;left:0;right:0;bottom:calc(35px + env(safe-area-inset-bottom));line-height:20px;text-align:center;color:#fff;font-weight:900;font-size:16px;letter-spacing:-.32px}
+#app.away #title{opacity:0;pointer-events:none}
+#app.away #title h1{transform:translateY(-40px) scale(1.08);opacity:0}
+#app:not(.title) #title{display:none}
+#app.title:not(.away) #items{visibility:hidden}
+#app.title #hud{opacity:0}
+
+@media (min-aspect-ratio:1/1){
+  #title h1{font-size:min(150px,14vw,22vh);margin-top:max(64px,12vh)}
+  #title h1 .w{display:inline}
+  #title h1 .w+.w{margin-left:.32em}
+  #stats{left:calc(17px + env(safe-area-inset-left));right:calc(17px + env(safe-area-inset-right));top:calc(81px + env(safe-area-inset-top))}
+  #topbar{top:calc(16px + env(safe-area-inset-top));height:46px}
+  #app.playing #topbar,#app.result #topbar{width:calc(100% - 34px)}
+  .stat{padding:12px 14px 16px}
+}
+
+/* ---------- modal ---------- */
+#modal{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;filter:drop-shadow(0 20px 20px var(--glow))}
+#card{width:min(320px,calc(100% - 40px));min-height:220px;padding:16px 16px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  opacity:0;transform:scale(.7) translateY(30px);transition:transform .55s var(--spring),opacity .25s ease}
+#app.showmodal #modal{pointer-events:auto}
+#app.showmodal #card{opacity:1;transform:none}
+#rtitle{font-size:48px;line-height:52px;white-space:nowrap;text-align:center;max-width:100%}
+#stars{display:flex;gap:6px;height:22px;align-items:center}
+#stars:empty{display:none}
+#stars svg{width:22px;height:22px;transform:scale(0)}
+#stars svg.off path{fill:var(--track)}
+#app.showmodal #stars svg{animation:starIn .5s var(--spring) both}
+@keyframes starIn{0%{transform:scale(0) rotate(-120deg)}100%{transform:scale(1) rotate(0)}}
+#rbtn{background:var(--green);padding:16px;border-radius:28px;font-weight:700;font-size:16px;line-height:18px;letter-spacing:-.32px;color:var(--ink);white-space:nowrap;
+  transition:transform .25s var(--spring),box-shadow .25s ease}
+#app.showmodal #rbtn{animation:btnIn .5s var(--spring) .25s both}
+@keyframes btnIn{0%{opacity:0;transform:translateY(10px) scale(.8)}100%{opacity:1;transform:none}}
+@media (hover:hover){#rbtn:hover{transform:scale(1.05)}}
+#rbtn:active{transform:scale(.94)}
+#rbtn:focus-visible,#topbar:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+
+/* ---------- all clear ---------- */
+#allclear{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:calc(20px + env(safe-area-inset-top)) 20px calc(80px + env(safe-area-inset-bottom));
+  background:var(--bg);opacity:0;visibility:hidden;transition:opacity .45s ease,visibility 0s linear .45s;overflow:hidden}
+#app.allclear #allclear{opacity:1;visibility:visible;transition:opacity .45s ease}
+#rain{position:absolute;inset:0;pointer-events:none}
+#rain i{position:absolute;top:-70px;display:block;background:center/contain no-repeat;animation:rain linear infinite;opacity:.95}
+@keyframes rain{from{transform:translateY(0) rotate(0)}to{transform:translateY(calc(100vh + 140px)) rotate(var(--spin,360deg))}}
+#acTitle{position:relative;font-family:'Bowlby One',sans-serif;font-weight:400;color:var(--cream);font-size:min(120px,19vw);line-height:1;text-align:center;white-space:nowrap;
+  filter:drop-shadow(0 20px 20px var(--glow))}
+#acTitle span{display:block}
+#acCard{position:relative;width:min(320px,100%);padding:16px 20px 20px;display:flex;flex-direction:column;gap:12px;
+  opacity:0;transform:translateY(40px) scale(.9);transition:transform .6s var(--spring) .15s,opacity .3s ease .15s;filter:drop-shadow(0 20px 20px var(--glow))}
+#app.allclear #acCard{opacity:1;transform:none}
+.acRow{display:flex;align-items:center;justify-content:space-between}
+.acRow .lv{gap:2px}
+.acRow .st{display:flex;gap:4px}
+.acRow .st svg{width:18px;height:18px;transform:scale(0)}
+.acRow .st svg.off path{fill:var(--track)}
+#app.allclear .acRow .st svg{animation:starIn .5s var(--spring) both}
+.acTotal{display:flex;justify-content:space-between;padding-top:12px;border-top:2px solid var(--track);font-weight:900;font-size:16px;letter-spacing:-.32px}
+#acBtn{position:relative;background:var(--green);padding:16px;border-radius:28px;font-weight:700;font-size:16px;line-height:18px;letter-spacing:-.32px;color:var(--ink);white-space:nowrap;
+  opacity:0;transform:translateY(20px) scale(.85);transition:transform .5s var(--spring) .45s,opacity .3s ease .45s}
+#app.allclear #acBtn{opacity:1;transform:none}
+#app.allclear #acBtn:active{transform:scale(.94);transition-delay:0s}
+#acBtn:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+@media (min-aspect-ratio:1/1){
+  #acTitle{font-size:min(120px,11vw,17vh)}
+  #acTitle span{display:inline}
+  #acTitle span+span{margin-left:.3em}
+  #allclear{gap:22px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<div id="app" class="title fontwait">
+  <div id="field">
+    <div id="flames"></div>
+    <div id="pan">
+      <svg class="ps-neck" viewBox="0 0 270 371" aria-hidden="true"><path d="M108 250 L112 267 Q120 268 120 276 L120 290 L150 290 L150 276 Q150 268 158 267 L162 250 Z"/></svg><div class="ps-grip"></div><div class="ps-rim"></div>
+      <svg class="neck" viewBox="0 0 270 371" aria-hidden="true"><path d="M108 250 L112 267 Q120 268 120 276 L120 290 L150 290 L150 276 Q150 268 158 267 L162 250 Z"/></svg><div class="grip"></div>
+      <div class="rim"></div>
+      <div class="inner"></div>
+      <div id="items"></div>
+    </div>
+  </div>
+
+  <div id="hud">
+    <div id="topbar" class="card" role="button" tabindex="0" aria-label="Change level" title="Tap to change level">
+      <div class="lv" id="lv"><svg viewBox="0 0 14.2656 14.2656"><path d="M6.4309 0.416127C6.73435 -0.138709 7.53122 -0.138709 7.83467 0.416126L9.84878 4.09878C9.92219 4.23301 10.0326 4.34338 10.1668 4.41679L13.8494 6.4309C14.4043 6.73435 14.4043 7.53122 13.8494 7.83467L10.1668 9.84878C10.0326 9.92219 9.92219 10.0326 9.84878 10.1668L7.83467 13.8494C7.53122 14.4043 6.73435 14.4043 6.4309 13.8494L4.41679 10.1668C4.34338 10.0326 4.23301 9.92219 4.09878 9.84878L0.416127 7.83467C-0.138709 7.53122 -0.138709 6.73435 0.416126 6.4309L4.09878 4.41679C4.23301 4.34338 4.34338 4.23301 4.41679 4.09878L6.4309 0.416127Z" fill="#2AE420"/></svg><span id="lvText">Lv.1</span></div>
+      <div id="count">0/20</div>
+    </div>
+    <div id="stats">
+      <div class="stat card" id="sHeat"><div class="k" data-t="heat"></div><div class="v"></div><div class="bar heat"><i></i></div></div>
+      <div class="stat card" id="sShake"><div class="k" data-t="shake"></div><div class="v"></div><div class="bar shake"><i></i><b></b></div></div>
+      <div class="stat card" id="sBurn"><div class="k" data-t="burn"></div><div class="v"></div><div class="bar burn"><i></i></div></div>
+    </div>
+  </div>
+
+  <div id="timer">30s</div>
+  <div id="msg"><span></span></div>
+
+  <div id="title">
+    <h1 id="logo"><span class="w"><span class="c">P</span><span class="c">O</span><span class="c">P</span></span><span class="w"><span class="c">P</span><span class="c">A</span><span class="c">N</span></span></h1>
+    <div id="hint"></div>
+  </div>
+
+  <div id="allclear">
+    <div id="rain"></div>
+    <h2 id="acTitle"><span>ALL</span><span>CLEAR!</span></h2>
+    <div id="acCard" class="card"></div>
+    <button id="acBtn">Play Again</button>
+  </div>
+
+  <div id="modal">
+    <div id="card" class="card">
+      <div id="rtitle" class="display"></div>
+      <div id="stars"></div>
+      <button id="rbtn"></button>
+    </div>
+  </div>
+</div>
+
+<button id="sound" aria-label="Sound on" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 19V5L7.5 9.5z" fill="currentColor"/><g class="w"><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18.5 6.5a7.5 7.5 0 0 1 0 11"/></g><g class="x"><path d="M16 9.5l5 5M21 9.5l-5 5"/></g></svg></button>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- assets (from Figma) ---------- */
+const IMG = {
+  kernel: 'data:image/svg+xml;base64,PHN2ZyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiBvdmVyZmxvdz0idmlzaWJsZSIgc3R5bGU9ImRpc3BsYXk6IGJsb2NrOyIgd2lkdGg9IjE4IiBoZWlnaHQ9IjE4IiB2aWV3Qm94PSIwIDAgMTggMTgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIGlkPSJHcm91cCAxMDAwMDA2ODM0Ij4KPHBhdGggaWQ9IkVsbGlwc2UgOTY1IiBkPSJNMTggOUMxOCAxMy45NzA2IDE1IDE4IDkgMThDMyAxOCAwIDEzLjk3MDYgMCA5QzAgNC4wMjk0NCAzIDAgOSAwQzE1IDAgMTggNC4wMjk0NCAxOCA5WiIgZmlsbD0idXJsKCNwYWludDBfbGluZWFyXzYzMjRfMzY2MDQpIi8+CjxwYXRoIGlkPSJFbGxpcHNlIDk2NiIgZD0iTTEyLjAwMDQgMi41NzE0M0MxMi4wMDA0IDMuMjgxNTEgMTAuNjU3MyAyLjU3MTQzIDkuMDAwNDIgMi41NzE0M0M3LjM0MzU2IDIuNTcxNDMgNi4wMDA0MiAzLjI4MTUxIDYuMDAwNDIgMi41NzE0M0M2LjAwMDQyIDEuODYxMzUgNy4zNDM1NiAxLjI4NTcxIDkuMDAwNDIgMS4yODU3MUMxMC42NTczIDEuMjg1NzEgMTIuMDAwNCAxLjg2MTM1IDEyLjAwMDQgMi41NzE0M1oiIGZpbGw9IiNCRDQ1MDAiLz4KPC9nPgo8ZGVmcz4KPGxpbmVhckdyYWRpZW50IGlkPSJwYWludDBfbGluZWFyXzYzMjRfMzY2MDQiIHgxPSI5IiB5MT0iMCIgeDI9IjkiIHkyPSIxOCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgo8c3RvcCBzdG9wLWNvbG9yPSIjRkZBMjM5Ii8+CjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0ZFNzIwMCIvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+Cjwvc3ZnPgo=',
+  pc: ['data:image/svg+xml;base64,PHN2ZyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiBvdmVyZmxvdz0idmlzaWJsZSIgc3R5bGU9ImRpc3BsYXk6IGJsb2NrOyIgd2lkdGg9IjUwIiBoZWlnaHQ9IjQyIiB2aWV3Qm94PSIwIDAgNTAgNDIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIGlkPSJHcm91cCAxMDAwMDA2ODM3IiBmaWx0ZXI9InVybCgjZmlsdGVyMF9pXzYzMjRfMzY2MzApIj4KPHBhdGggaWQ9IlZlY3RvciIgZD0iTTMxLjI1ODkgMC4wMzM5MzA3QzMyLjMwMiAtMC4wMzg0NDU5IDMzLjQ3MTQgLTAuMDAxMzMxMDkgMzQuNTAwNSAwLjIwNjUyQzM2LjU5NzggMC42Mjk2NDUgMzcuMTQzMiAyLjQzMzUgMzguNDE5IDMuODM5MjdDMzguOTk3MSA0LjQ3NTgyIDM5LjgyNDIgNS4wNTU3NSA0MC4yNjIxIDUuNzk0MzZDNDAuNDc4MiA2LjE1ODEgNDAuNDA5NCA2Ljc0ODI1IDQwLjMyNDcgNy4xNDA3NkMzOS44MzE5IDkuNDI2MTEgMzcuNjEzOCAxMS4xODMgMzYuNzQwOCAxMi4wNjcyQzM2LjQ3MzggMTIuMzM3NiAzNi40NDU5IDEyLjcwMDcgMzYuNzY2MiAxMi45MDUzQzM3LjQwMjkgMTMuMzExOSAzOC4yODY5IDEyLjk5ODIgMzguNzYyNiAxMi40MTEzQzM5LjgzNDcgMTEuMDg4NSA0MS4wMTYzIDEwLjAyNTUgNDIuODA2NiA5LjU1MjM4QzQ0LjM4MjkgOS4xMzU3NSA0NS4yMzQzIDEwLjUxMDkgNDYuNDEzOSAxMS4xODQ2QzQ2LjQ2MTYgMTEuMjExOCA0Ni41MDk2IDExLjIzODQgNDYuNTU3OSAxMS4yNjQ0QzQ4LjQwMzEgMTIuMjYwNCA0OS44NDczIDEzLjc1NDcgNDkuOTY1NiAxNS44NDgyQzUwLjExNzUgMTguNTM5MSA0OS43OTY2IDIwLjYwMzcgNDguNDA0NiAyMi45NDQ4QzQ3LjcxODEgMjQuMDk5MiA0Ni44OTMgMjQuOTgyNSA0Ni40NjQ2IDI2LjI3NzlDNDUuOTkzMSAyNy43MDQgNDYuMTQ1MiAyOC43OTQ3IDQ2LjE4OTkgMzAuMDgyMkM0Ni4yMTIxIDMwLjcyMjkgNDYuMDE5IDMxLjM2MzMgNDUuNTIzNCAzMS43N0M0NC40NTUxIDMyLjY0NjcgNDMuODIyNiAzMy44NTg1IDQzLjg5IDM1LjIzODlDNDMuOTMwOSAzNi4wNzQ1IDQzLjc2OTQgMzYuODY5MyA0My4wNzggMzcuNzE5OUM0MC42MTM0IDQwLjc1MzIgMzQuNjU1NiA0My41MzIzIDMxLjA0MjIgNDEuMDI3OUMzMC45MDYgNDAuOTMzNCAzMC43NzQxIDQwLjgyOTcgMzAuNjQ2NyA0MC43MTc3QzI4LjQxMSAzOC43NTE0IDI0LjYyNDQgMzYuMjE4MSAyMS44NTg1IDM1LjExNjJDMTkuNDgwOSAzNC4xMzU0IDE2LjcxODIgMzQuMDY2MyAxNC4zODU0IDM1LjE0OTRDMTIuNjUyNSAzNS45NTQgMTAuNzg4IDM2LjQ3ODIgOC45NDU4IDM2LjI1NzVDNy40ODg1IDM2LjA4MjEgNS43MTI1MyAzNS4yNjY1IDQuODU0MjcgMzMuOTEzNkMxLjc5NjExIDI5LjA5MTMgLTAuNDE1Nzk1IDIzLjI0NTUgMC4wNjYwMjIzIDE3LjQ1NzJDMC4xMjk5NjIgMTYuNjg4OSAwLjcxNzg1NiAxNS41ODI4IDEuMzQ4MDUgMTUuMTczNkMxLjgzMjU0IDE0Ljg1ODkgMi4yNTUwNyAxNC43NjU4IDIuNjkwMjMgMTQuNzczNUMzLjQ4OSAxNC43ODc4IDQuMjgzNDUgMTQuNjc4NiA1LjAyMDY4IDE0LjM3MDhDNS41ODkxOCAxNC4xMzM1IDYuMjM0MTUgMTQuMTE0MyA2LjgwMTQ2IDE0LjM1NDVDOC43MTAzIDE1LjE2MjYgOS41NjExNCAxNi42Mjc2IDkuODUzNjkgMTguNjQ1M0M5LjkyNzQgMTkuMTUzOCAxMC40MDk4IDE5LjUyMzEgMTAuOTA5OCAxOS40MDQ5QzExLjU4NzUgMTkuMjQ0NiAxMS43NDc4IDE4LjMyODYgMTEuMzI2IDE3Ljc3NDRDMTAuMDQ5IDE2LjA5NjIgOS40NDM3NSAxMy42MjcxIDEwLjE0NzggMTEuNzQ3OEMxMS4xMzI5IDkuMTE4MTMgMTQuNzYzIDguMDQzNiAxNy4zMjQ0IDcuOTQ4MDNDMTguOTkyIDcuODg0OTIgMjAuNTY0NCA4LjA3NSAyMi4xMjgxIDguNDYzMjZDMjMuMTA3MiA4LjcwNjM3IDI0LjI1MDkgNy42ODU2NSAyNC4xNTQ0IDYuNjgxNDVDMjMuODI1NiAzLjI1NTYyIDI2LjQ5ODIgMC42OTczODIgMjkuNzAxOCAwLjE0ODk5QzMwLjE3MiAwLjA2OTE5MDIgMzAuNzYgMC4wNTgwNTYyIDMxLjI1ODkgMC4wMzM5MzA3WiIgZmlsbD0idXJsKCNwYWludDBfbGluZWFyXzYzMjRfMzY2MzApIi8+CjxwYXRoIGlkPSJWZWN0b3JfMiIgZD0iTTMzLjIyMzUgMTIuMzg3OUMzMy41MzExIDExLjk0OTggMzQuMTYxIDExLjkyODYgMzQuNTIyIDEyLjMyNEMzNC42Mzc3IDEyLjQ1MDcgMzQuNzk0NSAxMi41MzI4IDM0LjkzNjQgMTIuNjI5NEMzNS40MTIxIDEyLjk1MzYgMzUuODIxNSAxMy44MTYzIDM2LjIzNjEgMTQuMjM4N0MzNi41NjEyIDE0LjU2OTMgMzcuNDc2NiAxNS4yOTY0IDM4LjA5MDQgMTUuNjg4MkMzOC4zMTU3IDE1LjgzMiAzOC42NTE5IDE1Ljc1NzYgMzguNjUzMSAxNS40OTA0QzM4LjY1MzEgMTUuNDc3OCAzOC42NTMyIDE1LjQ2NDMgMzguNjUzNCAxNS40NDk3QzM4LjY1MzggMTUuNDA1NyAzOC42NDcgMTUuMzYxMyAzOC42MjgxIDE1LjMyMTVDMzguNTI5MyAxNS4xMTQxIDM4LjM2MyAxNC45NjgyIDM4LjE3ODYgMTQuODE1NUMzOC4wNDUgMTQuNzA0OSAzOC4xMjA1IDE0LjU2OCAzOC4yNjE3IDE0LjY2ODZDMzguMjk1NCAxNC42OTI3IDM4LjM1MTMgMTQuNzEzOSAzOC4zOTI1IDE0LjcwOTJMMzguNDU3IDE0LjcwMTdDMzguNTU3NiAxNC42OSAzOC42NDYyIDE0LjYzMTkgMzguNzEyIDE0LjU1NUMzOS4yODUzIDEzLjg4NTEgNDEuMTgzOCAxMi44NTY4IDQxLjg5NjMgMTIuNjg1NEM0My45OTI2IDEyLjE3OTEgNDMuNzk5OCAxNS43MTI3IDQyLjgzMjMgMTYuNzE4NEM0Mi43NjM0IDE2Ljc5MDEgNDIuNjU1NSAxNi44MzcyIDQyLjU1NjEgMTYuODQwNEM0Mi4zNDk2IDE2Ljg0NyA0Mi4xNDE3IDE2Ljg1MTQgNDIuMDEzOSAxNy4wMTM3QzQxLjk1MjYgMTcuMDkxNSA0MS45MTQyIDE3LjE2NTcgNDEuODkwMyAxNy4yNTQ2QzQxLjgxNzQgMTcuNTI2OSA0MS45ODI5IDE3Ljc5NjEgNDIuMTA0MiAxOC4wNTA2QzQyLjU2NzQgMTkuMDIyMSA0MS43OTEgMjAuNDE1OSA0MC45NTUxIDIwLjk1MjFDMzkuOTIzNCAyMS42MTM3IDM4LjU4ODYgMjIuNjI2MSAzNy4zMzY2IDIyLjcxN0MzNi45MTc1IDIyLjc0NzkgMzYuNTcwNCAyMS44MzI3IDM2LjI0NzQgMjEuMjMwMUMzNi4wNzcxIDIwLjkxMjYgMzUuODMxOCAyMC42NDExIDM1LjU5MDQgMjAuMzczNkMzNS4wNDg5IDE5Ljc3MzggMzQuNDc0MSAxOS4zMTEgMzMuODQ2MyAxOC45NTQ2QzMyLjI5MjEgMTguMDcyNSAzMC45NjYzIDE2LjU5NTUgMzEuNzE3NSAxNC45NzRDMzIuMTQzMyAxNC4wNTQ4IDMyLjY3OTIgMTMuMTYzIDMzLjIyMzUgMTIuMzg3OVoiIGZpbGw9IiNGQ0I4MDYiLz4KPHBhdGggaWQ9IlZlY3Rvcl8zIiBkPSJNNDEuMjU5NCAxNi4zMTE0QzM5LjM1MTkgMTUuNzM2NyAzOS40NTAxIDEzLjcxNyA0MS4yNzI5IDEyLjkxMjlDNDEuNTIwNSAxMi44MDM3IDQxLjczNzIgMTIuNzIzNCA0MS44OTU0IDEyLjY4NTNDNDMuOTMyMyAxMi4xOTM0IDQzLjgwNzkgMTUuNTE1OCA0Mi45MTE2IDE2LjYyN0M0Mi43OTkzIDE2Ljc2NjMgNDIuNjM1NSAxNi44NjQ0IDQyLjQ1OTEgMTYuODMzN0M0Mi4zMjE4IDE2LjgwOTggNDIuMTkwNyAxNi43MjkyIDQyLjA3MjYgMTYuNjU1MkM0MS44MjYzIDE2LjUwMDkgNDEuNTQ5NSAxNi4zOTg4IDQxLjI1OTQgMTYuMzExNFoiIGZpbGw9IiNGMjg4MTAiLz4KPHBhdGggaWQ9IlZlY3Rvcl80IiBkPSJNMzcuMjgwMSAzMC40NDE1QzM2LjM4MzkgMjguOTU1OSAzNy44MTY0IDI4LjE1MiAzOS41NDM3IDI3Ljk4OTJDNDAuOTE5OSAyNy43ODk3IDQzLjAyMjEgMjYuNTczMiA0My41MTI2IDI4LjY4MzNDNDMuNzM2MSAyOS42NDQ2IDQyLjc3NDcgMzAuODA4MiA0Mi4yNTM4IDMxLjU4ODZDNDEuNTIxIDMyLjc5NDggNDAuOTY5NiAzNC4zOTgyIDM5LjQzMDEgMzIuOTc3NkMzOC41Nzc5IDMyLjE5MTEgMzcuODM2OSAzMS4zNjQ1IDM3LjI4MDEgMzAuNDQxNVoiIGZpbGw9IiNGMjg4MTAiLz4KPHBhdGggaWQ9IlZlY3Rvcl81IiBkPSJNMS42OTkyNCAxNy45NzMyQzEuODg0MDYgMTYuNzgzNyAzLjI5NjkxIDE2LjU5MTQgNC40OTUyNyAxNi43MDUzQzYuMjY5NjEgMTYuODczMSA3LjUyMTUgMTcuOTA3OCA2Ljk0NTk1IDE5LjU5NDVDNi44ODM4OCAxOS43NzY0IDYuODE1NTMgMTkuOTU1MSA2Ljc0MjUyIDIwLjEyNjlDNi4zMzQ4MSAyMS4wODY0IDUuNDk4MjYgMjEuOTY2NCA0LjQ1ODQzIDIxLjg5MTFDMi43Nzg0OCAyMS43Njk0IDEuNDM1NDMgMTkuNjcxMSAxLjY5OTI0IDE3Ljk3MzJaIiBmaWxsPSIjRjI4ODEwIi8+CjxwYXRoIGlkPSJWZWN0b3JfNiIgZD0iTTMuMDUwMTkgMjQuMTIwMUMzLjE1MjQyIDIyLjU2MDggNS41OTkwMSAyMi4zNjg3IDUuODMyMjMgMjMuOTEzOUM1LjkxNjU3IDI0LjQ3MjcgNS44NzIzNCAyNS4wODcgNS43MTAzNSAyNS42MTE1QzUuNDA0NzcgMjYuNjAxIDMuOTg5MjQgMjYuNzM0MiAzLjUwNzQgMjUuODE3NkMzLjE2Njk2IDI1LjE2ODcgMy4wMTc5NyAyNC42MTE1IDMuMDUwMTkgMjQuMTIwMVoiIGZpbGw9IiNGMjg4MTAiLz4KPC9nPgo8ZGVmcz4KPGZpbHRlciBpZD0iZmlsdGVyMF9pXzYzMjRfMzY2MzAiIHg9IjAiIHk9IjAiIHdpZHRoPSI1MCIgaGVpZ2h0PSI0MiIgZmlsdGVyVW5pdHM9InVzZXJTcGFjZU9uVXNlIiBjb2xvci1pbnRlcnBvbGF0aW9uLWZpbHRlcnM9InNSR0IiPgo8ZmVGbG9vZCBmbG9vZC1vcGFjaXR5PSIwIiByZXN1bHQ9IkJhY2tncm91bmRJbWFnZUZpeCIvPgo8ZmVCbGVuZCBtb2RlPSJub3JtYWwiIGluPSJTb3VyY2VHcmFwaGljIiBpbjI9IkJhY2tncm91bmRJbWFnZUZpeCIgcmVzdWx0PSJzaGFwZSIvPgo8ZmVDb2xvck1hdHJpeCBpbj0iU291cmNlQWxwaGEiIHR5cGU9Im1hdHJpeCIgdmFsdWVzPSIwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAxMjcgMCIgcmVzdWx0PSJoYXJkQWxwaGEiLz4KPGZlT2Zmc2V0Lz4KPGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iOCIvPgo8ZmVDb21wb3NpdGUgaW4yPSJoYXJkQWxwaGEiIG9wZXJhdG9yPSJhcml0aG1ldGljIiBrMj0iLTEiIGszPSIxIi8+CjxmZUNvbG9yTWF0cml4IHR5cGU9Im1hdHJpeCIgdmFsdWVzPSIwIDAgMCAwIDAuOTQ1MDk4IDAgMCAwIDAgMC41Mjk0MTIgMCAwIDAgMCAwLjA2Mjc0NTEgMCAwIDAgMC40IDAiLz4KPGZlQmxlbmQgbW9kZT0ibm9ybWFsIiBpbjI9InNoYXBlIiByZXN1bHQ9ImVmZmVjdDFfaW5uZXJTaGFkb3dfNjMyNF8zNjYzMCIvPgo8L2ZpbHRlcj4KPGxpbmVhckdyYWRpZW50IGlkPSJwYWludDBfbGluZWFyXzYzMjRfMzY2MzAiIHgxPSIyNSIgeTE9IjIuNDQ2MDRlLTA5IiB4Mj0iMjUiIHkyPSI0MiIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgo8c3RvcCBzdG9wLWNvbG9yPSIjRkZGRUZBIi8+CjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0ZERjE3RiIvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+Cjwvc3ZnPgo=', 'data:image/svg+xml;base64,PHN2ZyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiBvdmVyZmxvdz0idmlzaWJsZSIgc3R5bGU9ImRpc3BsYXk6IGJsb2NrOyIgd2lkdGg9IjQ3Ljk5ODQiIGhlaWdodD0iNDUuOTk5OSIgdmlld0JveD0iMCAwIDQ3Ljk5ODQgNDUuOTk5OSIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGcgaWQ9Ikdyb3VwIDEwMDAwMDY4MzYiIGZpbHRlcj0idXJsKCNmaWx0ZXIwX2lfNjMyNF8zNjYyNSkiPgo8cGF0aCBpZD0iVW5pb24iIGQ9Ik0xOS45NTM5IDAuOTM3NDVDMjEuODk1MyAtMC41NjY0MDcgMjQuNzQwNSAwLjMyNjI0NCAyNy4xODYgMC4xMDE5NTlDMzAuMTc0NSAtMC4xNzIxMzMgMzMuMjQyNCAwLjAxNTg4MjcgMzUuNzM4MSAxLjgwMjY4QzM3LjU0NTcgMy4xMDM5NiAzNy44ODU5IDUuNTc5MjkgMzcuMjkzNCA3LjcyNjI3QzM3LjEyMTIgOC4zNTAyOSAzNi45MTg4IDguOTUwMzggMzYuNjk3MSA5LjQ3NzQ5QzM1LjgwMzUgMTEuNjAxMyAzMy4zMzY2IDEyLjk5MzcgMzEuNjM0NiAxNC40MTZDMzEuMTM5OSAxNC44Mjk0IDI5Ljk2MjIgMTUuMzgyMiAyOS42MTg5IDE1Ljg2NDVDMjkuNjA4OCAxNS44Nzg2IDI5LjYwMTEgMTUuODkzOSAyOS41OTQ4IDE1LjkxQzI5LjU2ODYgMTUuOTc3IDI5LjU3MjggMTYuMDUyNSAyOS42MDkzIDE2LjExNDRDMjkuODM4NiAxNi41MDI2IDMwLjEzIDE2Ljc5MTcgMzAuNDYwMSAxNy4wNDQyQzMxLjE0NDYgMTcuNTY3OSAzMi4wNjcxIDE3LjY0MDYgMzIuODk2NiAxNy40MDY1QzMzLjYxNTkgMTcuMjAzNiAzNC4zMzQ4IDE3LjAxODkgMzUuMDgzOCAxNi44NzRDMzguNTkyMSAxNi4xOTU0IDQyLjgzOTYgMTYuOTM5IDQ0Ljc4NzcgMTkuMTExNkM0Ny43NTc4IDIyLjQyMzggNDguODc1NyAyOC4xOTM3IDQ3LjI1MjcgMzIuMzM1OUM0Ni43MDk3IDMzLjcyMTYgNDYuMjExNyAzNC4zMzY1IDQ1LjMzMzcgMzQuODc2OUM0NC41NDQ5IDM1LjM2MjQgNDQuMTMwOSAzNi4yNjAyIDQ0LjMyODkgMzcuMTY1QzQ0LjQ4NDMgMzcuODc1MiA0NC40OTU4IDM4LjQ1NDMgNDQuMDk2NSAzOS4wNzkxQzQzLjYxNDMgMzkuODMzMyA0Mi45MTgxIDQwLjQ4NDYgNDIuMDExNSA0MC42NTMzQzM5LjY2NTMgNDEuMDg5OCAzOC43Mzk5IDM5LjAyOTMgMzcuNzA2MSAzNi44MTI4QzM2LjYxNDcgMzQuNDcyOCAzMy45NTY3IDM1LjA4NjQgMzIuMjAyOSAzNi45ODE0QzMwLjM4ODEgMzguOTQyMiAyNi43ODgxIDQxLjYyMTYgMjMuOTk0IDQxLjY5MjNDMjMuMTM4OCA0MS43MDk5IDIyLjMxMSA0MS4zODk0IDIxLjY5MjIgNDAuODAxN0MyMS41ODMgNDAuNjk1OSAyMS40MTcyIDQwLjc5ODMgMjEuMzUzNyA0MC45MzY0QzIxLjA3NTggNDEuNTM5OSAyMC44MTY1IDQyLjE0MDUgMjAuMjkxOCA0Mi41NTQ2QzE3LjgxMTQgNDQuNTEyNiAxMi44MTI0IDQ2LjE4NSA5LjcwMDAxIDQ1Ljk4MzNDNy40NDg5NyA0NS44Mzc2IDQuODM0OTUgNDMuNTAxIDMuNTYyMzIgNDEuODAwN0MxLjI0NyAzOC43MDY5IC0wLjUwNDAzNyAzMy44MDA5IDAuMTMxNjU1IDI5LjkwMzNDMC43MTg1NjQgMjYuMzA0NiAzLjI5OTE0IDIxLjg3NzIgNi4xNTcwNSAxOS41NzQyQzYuMzE4MDQgMTkuNDQ0NSA2LjQ4NjM1IDE5LjMyMDcgNi42NTkzOSAxOS4yMDA2QzguMDQ0NTcgMTguMjM5MyA4Ljg2NjA1IDE2Ljc5NTMgOC44ODQ1OCAxNS4xMDkzQzguOTI0ODggMTIuNTI5OCA4LjgwMjY1IDkuODQ1NTIgOS4xMzM2MSA3LjI4NDEzQzkuMzc3ODEgNS4zOTUwMiAxMC44NjE3IDQuMjYzNjQgMTIuNzQ0OSA0LjY5MDM4QzE0LjUyOTUgNS4wOTQ4IDE3LjU3MjYgNC4yMzgwOSAxOC41MDU0IDIuNjYzOTNDMTguOTE0MyAxLjk3Mzg5IDE5LjM5NTkgMS4zNjk3NiAxOS45NTM5IDAuOTM3NDVaIiBmaWxsPSJ1cmwoI3BhaW50MF9saW5lYXJfNjMyNF8zNjYyNSkiLz4KPHBhdGggaWQ9IlZlY3RvciIgZD0iTTI1LjQ2MzkgMTUuOTE0MkMyNS43Njk5IDExLjgyNiAxNy42MDgyIDE2LjEwMTEgMjEuMjk3NiAxNy44ODg2QzIyLjg5MTYgMTguNjYwOSAyNS4zMzE3IDE3LjY4MDUgMjUuNDYzOSAxNS45MTQyWiIgZmlsbD0iI0ZDQjgwNiIvPgo8cGF0aCBpZD0iVmVjdG9yXzIiIGQ9Ik0yMy4wNDU5IDIwLjA1OTZDMjMuMzk4NyAxOS45MjMyIDIzLjc4MjggMTkuODY1MiAyNC4xNjA2IDE5Ljg0NzdDMzEuMDE2OCAxOS41MzAyIDI3LjAyMDcgMjQuNDk2IDIzLjM1NzYgMjYuMTQ1MkMyMy4yMjk1IDI2LjIwMjkgMjMuMDk2NCAyNi4yNDQ3IDIyLjk1OTUgMjYuMjc2MUMyMS40MTIgMjYuNjMxNSAxOS44NTYgMjUuNDMwMyAyMC4xNzExIDIzLjg3NDFDMjAuNDkzNiAyMi4yODE3IDIxLjI0OTkgMjAuNzUzNyAyMy4wNDU5IDIwLjA1OTZaIiBmaWxsPSIjRkNCODA2Ii8+CjwvZz4KPGRlZnM+CjxmaWx0ZXIgaWQ9ImZpbHRlcjBfaV82MzI0XzM2NjI1IiB4PSIwIiB5PSIwIiB3aWR0aD0iNDcuOTk4NCIgaGVpZ2h0PSI0NS45OTk5IiBmaWx0ZXJVbml0cz0idXNlclNwYWNlT25Vc2UiIGNvbG9yLWludGVycG9sYXRpb24tZmlsdGVycz0ic1JHQiI+CjxmZUZsb29kIGZsb29kLW9wYWNpdHk9IjAiIHJlc3VsdD0iQmFja2dyb3VuZEltYWdlRml4Ii8+CjxmZUJsZW5kIG1vZGU9Im5vcm1hbCIgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iQmFja2dyb3VuZEltYWdlRml4IiByZXN1bHQ9InNoYXBlIi8+CjxmZUNvbG9yTWF0cml4IGluPSJTb3VyY2VBbHBoYSIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDEyNyAwIiByZXN1bHQ9ImhhcmRBbHBoYSIvPgo8ZmVPZmZzZXQvPgo8ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSI4Ii8+CjxmZUNvbXBvc2l0ZSBpbjI9ImhhcmRBbHBoYSIgb3BlcmF0b3I9ImFyaXRobWV0aWMiIGsyPSItMSIgazM9IjEiLz4KPGZlQ29sb3JNYXRyaXggdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMC45NDUwOTggMCAwIDAgMCAwLjUyOTQxMiAwIDAgMCAwIDAuMDYyNzQ1MSAwIDAgMCAwLjQgMCIvPgo8ZmVCbGVuZCBtb2RlPSJub3JtYWwiIGluMj0ic2hhcGUiIHJlc3VsdD0iZWZmZWN0MV9pbm5lclNoYWRvd182MzI0XzM2NjI1Ii8+CjwvZmlsdGVyPgo8bGluZWFyR3JhZGllbnQgaWQ9InBhaW50MF9saW5lYXJfNjMyNF8zNjYyNSIgeDE9IjIzLjk5OTIiIHkxPSItMy4xNDM0ZS0wOSIgeDI9IjIzLjk5OTIiIHkyPSI0NS45OTk5IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wIHN0b3AtY29sb3I9IiNGRkZFRkEiLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjRkRGMTdGIi8+CjwvbGluZWFyR3JhZGllbnQ+CjwvZGVmcz4KPC9zdmc+Cg==', 'data:image/svg+xml;base64,PHN2ZyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiBvdmVyZmxvdz0idmlzaWJsZSIgc3R5bGU9ImRpc3BsYXk6IGJsb2NrOyIgd2lkdGg9IjM2IiBoZWlnaHQ9IjM0IiB2aWV3Qm94PSIwIDAgMzYgMzQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIGlkPSJHcm91cCAxMDAwMDA2ODM1IiBmaWx0ZXI9InVybCgjZmlsdGVyMF9pXzYzMjRfMzY2NDEpIj4KPHBhdGggaWQ9IlZlY3RvciIgZD0iTTMuNzI2ODggNi4zNTFDNi40NjQ0MiA1LjY3NTM3IDkuNjYzNzkgMy43NjgwNiAxMS42MjQxIDEuNzQxMzNDMTIuOTU0MiAwLjM2NjIwMyAxNS4wOTcxIC0wLjA5NzUxMyAxOC4xNDM4IDAuMDE2NTkxNEMyMi40ODQxIDAuMTc5MTc1IDI0LjEyMDMgLTAuMzEwNzg5IDI4LjI1NzUgMS44NzM4NEMyOS44OTUgMy4wMjY0NSAzMC44NzEgNS41NDk3NiAzMS45ODg4IDcuMjExMjVDMzIuNzI5MyA4LjMxMTk2IDMzLjMwMTQgOS41NzUyOSAzMy42ODk3IDEwLjUwNzhDMzUuMjI1OSAxNC4xOTc4IDM2LjQ2MDEgMTcuMjYwMiAzNS44MzMzIDIxLjM2MTRDMzUuNjc5OCAyMi4zNjUxIDM1Ljc2MzUgMjMuNjM2MyAzNS4zMTM4IDI0LjYyMzhDMzQuMTk5MSAyNi45MzM1IDMxLjQzNTQgMjkuMjkyOSAyOS4yMDIyIDMwLjI3ODVDMjguMzMzOSAzMC42NjE4IDI3LjI2ODEgMzAuNzU5NCAyNi4xMjY1IDMwLjY3NTFDMjEuOTg0NiAzMC4zNjkyIDE3LjQxMjQgMzMuMTE4NyAxMy4zMzMxIDMzLjg5ODlDMTAuMDAxMSAzNC41MzcxIDcuNTM4MTMgMzIuMDc0NyA3LjMyMjYxIDI4Ljc2ODFDNy4yNjMyMSAyNy44NTU2IDYuNjI0OTYgMjcuMTYzMSA1Ljc4NDcgMjYuODAyMkMzLjM2OTE3IDI1Ljc2NDkgMS40MTY5MSAyMy4zMzYgMS4xMDY4MiAyMC42NzhDMC44Mjk0OCAxOC4zMDEyIDEuNTkzMzQgMTUuOTg3IDAuNjgzNjEgMTMuNzczN0MwLjE0NTQ4NSAxMi40NjQ1IC0wLjIyNTIyNSAxMS4xMjgzIDAuMTU2Njg3IDkuOTUwNTZDMC42NTI3ODIgOC40NDYwMSAyLjIxNzEgNi43MjM1MyAzLjcyNjg4IDYuMzUxWiIgZmlsbD0idXJsKCNwYWludDBfbGluZWFyXzYzMjRfMzY2NDEpIi8+CjxwYXRoIGlkPSJWZWN0b3JfMiIgZD0iTTIzLjg4MDYgMTEuMTcwMkMyNi42Mzg5IDEwLjk2MjkgMzAuMTY5IDkuOTY0MjMgMzAuNDUyNiAxMi43MTU4QzMwLjY0ODMgMTQuNjE1OCAzMi4yOTE3IDE1Ljg0OTMgMzMuMTg0MiAxNy41MzhDMzMuMjE1MyAxNy41OTY3IDMzLjI0MTQgMTcuNjU2OSAzMy4yNjIyIDE3LjcxODZDMzMuNzM4NyAxOS4xMzYzIDMxLjUyNzMgMTguNzk0NyAzMS4wMDI3IDE4Ljc0MDVDMjkuMDk0NCAxOC41NDM2IDI3LjUxMTYgMTcuOTQ4NyAyNS43NTA4IDE3LjI1NzlDMjQuNTk0NSAxNi44MjkgMjMuMTk4MiAxNi4wNzM5IDIxLjk5OTYgMTYuNTAyMkMyMC4wNDE4IDE3LjIwMTYgMTcuNDkxIDE3LjI4NTIgMTcuMTc0IDE1LjIzMDVDMTYuOTY4MSAxMy44OTUzIDE3LjM1OTcgMTIuNjQ1MSAxOS4wNzQ3IDExLjcyNTlDMjAuMjY2MyAxMS4wODcyIDIxLjE0MTMgMTEuMDE0MiAyMi40MzY0IDExLjE1MTNDMjIuOTc0OSAxMS4xOTUyIDIzLjQ1MDUgMTEuMjAyNSAyMy44ODA2IDExLjE3MDJaIiBmaWxsPSIjRkNCODA2Ii8+CjwvZz4KPGRlZnM+CjxmaWx0ZXIgaWQ9ImZpbHRlcjBfaV82MzI0XzM2NjQxIiB4PSIxLjY1MTc3ZS0wOSIgeT0iMCIgd2lkdGg9IjM2IiBoZWlnaHQ9IjM0IiBmaWx0ZXJVbml0cz0idXNlclNwYWNlT25Vc2UiIGNvbG9yLWludGVycG9sYXRpb24tZmlsdGVycz0ic1JHQiI+CjxmZUZsb29kIGZsb29kLW9wYWNpdHk9IjAiIHJlc3VsdD0iQmFja2dyb3VuZEltYWdlRml4Ii8+CjxmZUJsZW5kIG1vZGU9Im5vcm1hbCIgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iQmFja2dyb3VuZEltYWdlRml4IiByZXN1bHQ9InNoYXBlIi8+CjxmZUNvbG9yTWF0cml4IGluPSJTb3VyY2VBbHBoYSIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDEyNyAwIiByZXN1bHQ9ImhhcmRBbHBoYSIvPgo8ZmVPZmZzZXQvPgo8ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSI4Ii8+CjxmZUNvbXBvc2l0ZSBpbjI9ImhhcmRBbHBoYSIgb3BlcmF0b3I9ImFyaXRobWV0aWMiIGsyPSItMSIgazM9IjEiLz4KPGZlQ29sb3JNYXRyaXggdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMC45NDUwOTggMCAwIDAgMCAwLjUyOTQxMiAwIDAgMCAwIDAuMDYyNzQ1MSAwIDAgMCAwLjQgMCIvPgo8ZmVCbGVuZCBtb2RlPSJub3JtYWwiIGluMj0ic2hhcGUiIHJlc3VsdD0iZWZmZWN0MV9pbm5lclNoYWRvd182MzI0XzM2NjQxIi8+CjwvZmlsdGVyPgo8bGluZWFyR3JhZGllbnQgaWQ9InBhaW50MF9saW5lYXJfNjMyNF8zNjY0MSIgeDE9IjE4IiB5MT0iMS43MDA0NWUtMDkiIHgyPSIxOCIgeTI9IjM0IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wIHN0b3AtY29sb3I9IiNGRkZFRkEiLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjRkRGMTdGIi8+CjwvbGluZWFyR3JhZGllbnQ+CjwvZGVmcz4KPC9zdmc+Cg=='],
+  pcBurnt: ['data:image/svg+xml;base64,PHN2ZyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiBvdmVyZmxvdz0idmlzaWJsZSIgc3R5bGU9ImRpc3BsYXk6IGJsb2NrOyIgd2lkdGg9IjUwIiBoZWlnaHQ9IjQyIiB2aWV3Qm94PSIwIDAgNTAgNDIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIGlkPSJHcm91cCAxMDAwMDA2ODM3IiBmaWx0ZXI9InVybCgjZmlsdGVyMF9pXzYzMjRfMzY1NTEpIj4KPHBhdGggaWQ9IlZlY3RvciIgZD0iTTMxLjI1ODkgMC4wMzM5MzA3QzMyLjMwMiAtMC4wMzg0NDU5IDMzLjQ3MTQgLTAuMDAxMzMxMDkgMzQuNTAwNSAwLjIwNjUyQzM2LjU5NzggMC42Mjk2NDUgMzcuMTQzMiAyLjQzMzUgMzguNDE5IDMuODM5MjdDMzguOTk3MSA0LjQ3NTgyIDM5LjgyNDIgNS4wNTU3NSA0MC4yNjIxIDUuNzk0MzZDNDAuNDc4MiA2LjE1ODEgNDAuNDA5NCA2Ljc0ODI1IDQwLjMyNDcgNy4xNDA3NkMzOS44MzE5IDkuNDI2MTEgMzcuNjEzOCAxMS4xODMgMzYuNzQwOCAxMi4wNjcyQzM2LjQ3MzggMTIuMzM3NiAzNi40NDU5IDEyLjcwMDcgMzYuNzY2MiAxMi45MDUzQzM3LjQwMjkgMTMuMzExOSAzOC4yODY5IDEyLjk5ODIgMzguNzYyNiAxMi40MTEzQzM5LjgzNDcgMTEuMDg4NSA0MS4wMTYzIDEwLjAyNTUgNDIuODA2NiA5LjU1MjM4QzQ0LjM4MjkgOS4xMzU3NSA0NS4yMzQzIDEwLjUxMDkgNDYuNDEzOSAxMS4xODQ2QzQ2LjQ2MTYgMTEuMjExOCA0Ni41MDk2IDExLjIzODQgNDYuNTU3OSAxMS4yNjQ0QzQ4LjQwMzEgMTIuMjYwNCA0OS44NDczIDEzLjc1NDcgNDkuOTY1NiAxNS44NDgyQzUwLjExNzUgMTguNTM5MSA0OS43OTY2IDIwLjYwMzcgNDguNDA0NiAyMi45NDQ4QzQ3LjcxODEgMjQuMDk5MiA0Ni44OTMgMjQuOTgyNSA0Ni40NjQ2IDI2LjI3NzlDNDUuOTkzMSAyNy43MDQgNDYuMTQ1MiAyOC43OTQ3IDQ2LjE4OTkgMzAuMDgyMkM0Ni4yMTIxIDMwLjcyMjkgNDYuMDE5IDMxLjM2MzMgNDUuNTIzNCAzMS43N0M0NC40NTUxIDMyLjY0NjcgNDMuODIyNiAzMy44NTg1IDQzLjg5IDM1LjIzODlDNDMuOTMwOSAzNi4wNzQ1IDQzLjc2OTQgMzYuODY5MyA0My4wNzggMzcuNzE5OUM0MC42MTM0IDQwLjc1MzIgMzQuNjU1NiA0My41MzIzIDMxLjA0MjIgNDEuMDI3OUMzMC45MDYgNDAuOTMzNCAzMC43NzQxIDQwLjgyOTcgMzAuNjQ2NyA0MC43MTc3QzI4LjQxMSAzOC43NTE0IDI0LjYyNDQgMzYuMjE4MSAyMS44NTg1IDM1LjExNjJDMTkuNDgwOSAzNC4xMzU0IDE2LjcxODIgMzQuMDY2MyAxNC4zODU0IDM1LjE0OTRDMTIuNjUyNSAzNS45NTQgMTAuNzg4IDM2LjQ3ODIgOC45NDU4IDM2LjI1NzVDNy40ODg1IDM2LjA4MjEgNS43MTI1MyAzNS4yNjY1IDQuODU0MjcgMzMuOTEzNkMxLjc5NjExIDI5LjA5MTMgLTAuNDE1Nzk1IDIzLjI0NTUgMC4wNjYwMjIzIDE3LjQ1NzJDMC4xMjk5NjIgMTYuNjg4OSAwLjcxNzg1NiAxNS41ODI4IDEuMzQ4MDUgMTUuMTczNkMxLjgzMjU0IDE0Ljg1ODkgMi4yNTUwNyAxNC43NjU4IDIuNjkwMjMgMTQuNzczNUMzLjQ4OSAxNC43ODc4IDQuMjgzNDUgMTQuNjc4NiA1LjAyMDY4IDE0LjM3MDhDNS41ODkxOCAxNC4xMzM1IDYuMjM0MTUgMTQuMTE0MyA2LjgwMTQ2IDE0LjM1NDVDOC43MTAzIDE1LjE2MjYgOS41NjExNCAxNi42Mjc2IDkuODUzNjkgMTguNjQ1M0M5LjkyNzQgMTkuMTUzOCAxMC40MDk4IDE5LjUyMzEgMTAuOTA5OCAxOS40MDQ5QzExLjU4NzUgMTkuMjQ0NiAxMS43NDc4IDE4LjMyODYgMTEuMzI2IDE3Ljc3NDRDMTAuMDQ5IDE2LjA5NjIgOS40NDM3NSAxMy42MjcxIDEwLjE0NzggMTEuNzQ3OEMxMS4xMzI5IDkuMTE4MTMgMTQuNzYzIDguMDQzNiAxNy4zMjQ0IDcuOTQ4MDNDMTguOTkyIDcuODg0OTIgMjAuNTY0NCA4LjA3NSAyMi4xMjgxIDguNDYzMjZDMjMuMTA3MiA4LjcwNjM3IDI0LjI1MDkgNy42ODU2NSAyNC4xNTQ0IDYuNjgxNDVDMjMuODI1NiAzLjI1NTYyIDI2LjQ5ODIgMC42OTczODIgMjkuNzAxOCAwLjE0ODk5QzMwLjE3MiAwLjA2OTE5MDIgMzAuNzYgMC4wNTgwNTYyIDMxLjI1ODkgMC4wMzM5MzA3WiIgZmlsbD0idXJsKCNwYWludDBfbGluZWFyXzYzMjRfMzY1NTEpIi8+CjxwYXRoIGlkPSJWZWN0b3JfMiIgZD0iTTMzLjIyMzUgMTIuMzg3OUMzMy41MzExIDExLjk0OTggMzQuMTYxIDExLjkyODYgMzQuNTIyIDEyLjMyNEMzNC42Mzc3IDEyLjQ1MDcgMzQuNzk0NSAxMi41MzI4IDM0LjkzNjQgMTIuNjI5NEMzNS40MTIxIDEyLjk1MzYgMzUuODIxNSAxMy44MTYzIDM2LjIzNjEgMTQuMjM4N0MzNi41NjEyIDE0LjU2OTMgMzcuNDc2NiAxNS4yOTY0IDM4LjA5MDQgMTUuNjg4MkMzOC4zMTU3IDE1LjgzMiAzOC42NTE5IDE1Ljc1NzYgMzguNjUzMSAxNS40OTA0QzM4LjY1MzEgMTUuNDc3OCAzOC42NTMyIDE1LjQ2NDMgMzguNjUzNCAxNS40NDk3QzM4LjY1MzggMTUuNDA1NyAzOC42NDcgMTUuMzYxMyAzOC42MjgxIDE1LjMyMTVDMzguNTI5MyAxNS4xMTQxIDM4LjM2MyAxNC45NjgyIDM4LjE3ODYgMTQuODE1NUMzOC4wNDUgMTQuNzA0OSAzOC4xMjA1IDE0LjU2OCAzOC4yNjE3IDE0LjY2ODZDMzguMjk1NCAxNC42OTI3IDM4LjM1MTMgMTQuNzEzOSAzOC4zOTI1IDE0LjcwOTJMMzguNDU3IDE0LjcwMTdDMzguNTU3NiAxNC42OSAzOC42NDYyIDE0LjYzMTkgMzguNzEyIDE0LjU1NUMzOS4yODUzIDEzLjg4NTEgNDEuMTgzOCAxMi44NTY4IDQxLjg5NjMgMTIuNjg1NEM0My45OTI2IDEyLjE3OTEgNDMuNzk5OCAxNS43MTI3IDQyLjgzMjMgMTYuNzE4NEM0Mi43NjM0IDE2Ljc5MDEgNDIuNjU1NSAxNi44MzcyIDQyLjU1NjEgMTYuODQwNEM0Mi4zNDk2IDE2Ljg0NyA0Mi4xNDE3IDE2Ljg1MTQgNDIuMDEzOSAxNy4wMTM3QzQxLjk1MjYgMTcuMDkxNSA0MS45MTQyIDE3LjE2NTcgNDEuODkwMyAxNy4yNTQ2QzQxLjgxNzQgMTcuNTI2OSA0MS45ODI5IDE3Ljc5NjEgNDIuMTA0MiAxOC4wNTA2QzQyLjU2NzQgMTkuMDIyMSA0MS43OTEgMjAuNDE1OSA0MC45NTUxIDIwLjk1MjFDMzkuOTIzNCAyMS42MTM3IDM4LjU4ODYgMjIuNjI2MSAzNy4zMzY2IDIyLjcxN0MzNi45MTc1IDIyLjc0NzkgMzYuNTcwNCAyMS44MzI3IDM2LjI0NzQgMjEuMjMwMUMzNi4wNzcxIDIwLjkxMjYgMzUuODMxOCAyMC42NDExIDM1LjU5MDQgMjAuMzczNkMzNS4wNDg5IDE5Ljc3MzggMzQuNDc0MSAxOS4zMTEgMzMuODQ2MyAxOC45NTQ2QzMyLjI5MjEgMTguMDcyNSAzMC45NjYzIDE2LjU5NTUgMzEuNzE3NSAxNC45NzRDMzIuMTQzMyAxNC4wNTQ4IDMyLjY3OTIgMTMuMTYzIDMzLjIyMzUgMTIuMzg3OVoiIGZpbGw9IiNBRjdFMDAiLz4KPHBhdGggaWQ9IlZlY3Rvcl8zIiBkPSJNNDEuMjU5NCAxNi4zMTE0QzM5LjM1MTkgMTUuNzM2NyAzOS40NTAxIDEzLjcxNyA0MS4yNzI5IDEyLjkxMjlDNDEuNTIwNSAxMi44MDM3IDQxLjczNzIgMTIuNzIzNCA0MS44OTU0IDEyLjY4NTNDNDMuOTMyMyAxMi4xOTM0IDQzLjgwNzkgMTUuNTE1OCA0Mi45MTE2IDE2LjYyN0M0Mi43OTkzIDE2Ljc2NjMgNDIuNjM1NSAxNi44NjQ0IDQyLjQ1OTEgMTYuODMzN0M0Mi4zMjE4IDE2LjgwOTggNDIuMTkwNyAxNi43MjkyIDQyLjA3MjYgMTYuNjU1MkM0MS44MjYzIDE2LjUwMDkgNDEuNTQ5NSAxNi4zOTg4IDQxLjI1OTQgMTYuMzExNFoiIGZpbGw9IiNBQTVBMDAiLz4KPHBhdGggaWQ9IlZlY3Rvcl80IiBkPSJNMzcuMjgwMSAzMC40NDE1QzM2LjM4MzkgMjguOTU1OSAzNy44MTY0IDI4LjE1MiAzOS41NDM3IDI3Ljk4OTJDNDAuOTE5OSAyNy43ODk3IDQzLjAyMjEgMjYuNTczMiA0My41MTI2IDI4LjY4MzNDNDMuNzM2MSAyOS42NDQ2IDQyLjc3NDcgMzAuODA4MiA0Mi4yNTM4IDMxLjU4ODZDNDEuNTIxIDMyLjc5NDggNDAuOTY5NiAzNC4zOTgyIDM5LjQzMDEgMzIuOTc3NkMzOC41Nzc5IDMyLjE5MTEgMzcuODM2OSAzMS4zNjQ1IDM3LjI4MDEgMzAuNDQxNVoiIGZpbGw9IiNBQTVBMDAiLz4KPHBhdGggaWQ9IlZlY3Rvcl81IiBkPSJNMS42OTkyNCAxNy45NzMyQzEuODg0MDYgMTYuNzgzNyAzLjI5NjkxIDE2LjU5MTQgNC40OTUyNyAxNi43MDUzQzYuMjY5NjEgMTYuODczMSA3LjUyMTUgMTcuOTA3OCA2Ljk0NTk1IDE5LjU5NDVDNi44ODM4OCAxOS43NzY0IDYuODE1NTMgMTkuOTU1MSA2Ljc0MjUyIDIwLjEyNjlDNi4zMzQ4MSAyMS4wODY0IDUuNDk4MjYgMjEuOTY2NCA0LjQ1ODQzIDIxLjg5MTFDMi43Nzg0OCAyMS43Njk0IDEuNDM1NDMgMTkuNjcxMSAxLjY5OTI0IDE3Ljk3MzJaIiBmaWxsPSIjQUE1QTAwIi8+CjxwYXRoIGlkPSJWZWN0b3JfNiIgZD0iTTMuMDUwMTkgMjQuMTIwMUMzLjE1MjQyIDIyLjU2MDggNS41OTkwMSAyMi4zNjg3IDUuODMyMjMgMjMuOTEzOUM1LjkxNjU3IDI0LjQ3MjcgNS44NzIzNCAyNS4wODcgNS43MTAzNSAyNS42MTE1QzUuNDA0NzcgMjYuNjAxIDMuOTg5MjQgMjYuNzM0MiAzLjUwNzQgMjUuODE3NkMzLjE2Njk2IDI1LjE2ODcgMy4wMTc5NyAyNC42MTE1IDMuMDUwMTkgMjQuMTIwMVoiIGZpbGw9IiNBQTVBMDAiLz4KPC9nPgo8ZGVmcz4KPGZpbHRlciBpZD0iZmlsdGVyMF9pXzYzMjRfMzY1NTEiIHg9IjAiIHk9IjAiIHdpZHRoPSI1MCIgaGVpZ2h0PSI0MiIgZmlsdGVyVW5pdHM9InVzZXJTcGFjZU9uVXNlIiBjb2xvci1pbnRlcnBvbGF0aW9uLWZpbHRlcnM9InNSR0IiPgo8ZmVGbG9vZCBmbG9vZC1vcGFjaXR5PSIwIiByZXN1bHQ9IkJhY2tncm91bmRJbWFnZUZpeCIvPgo8ZmVCbGVuZCBtb2RlPSJub3JtYWwiIGluPSJTb3VyY2VHcmFwaGljIiBpbjI9IkJhY2tncm91bmRJbWFnZUZpeCIgcmVzdWx0PSJzaGFwZSIvPgo8ZmVDb2xvck1hdHJpeCBpbj0iU291cmNlQWxwaGEiIHR5cGU9Im1hdHJpeCIgdmFsdWVzPSIwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAxMjcgMCIgcmVzdWx0PSJoYXJkQWxwaGEiLz4KPGZlT2Zmc2V0Lz4KPGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iOCIvPgo8ZmVDb21wb3NpdGUgaW4yPSJoYXJkQWxwaGEiIG9wZXJhdG9yPSJhcml0aG1ldGljIiBrMj0iLTEiIGszPSIxIi8+CjxmZUNvbG9yTWF0cml4IHR5cGU9Im1hdHJpeCIgdmFsdWVzPSIwIDAgMCAwIDAuOTQ1MDk4IDAgMCAwIDAgMC41Mjk0MTIgMCAwIDAgMCAwLjA2Mjc0NTEgMCAwIDAgMC40IDAiLz4KPGZlQmxlbmQgbW9kZT0ibm9ybWFsIiBpbjI9InNoYXBlIiByZXN1bHQ9ImVmZmVjdDFfaW5uZXJTaGFkb3dfNjMyNF8zNjU1MSIvPgo8L2ZpbHRlcj4KPGxpbmVhckdyYWRpZW50IGlkPSJwYWludDBfbGluZWFyXzYzMjRfMzY1NTEiIHgxPSIyNSIgeTE9IjIuNDQ2MDRlLTA5IiB4Mj0iMjUiIHkyPSI0MiIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgo8c3RvcCBzdG9wLWNvbG9yPSIjOTc2QzAwIi8+CjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzU1MUYwMCIvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+Cjwvc3ZnPgo=', 'data:image/svg+xml;base64,PHN2ZyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiBvdmVyZmxvdz0idmlzaWJsZSIgc3R5bGU9ImRpc3BsYXk6IGJsb2NrOyIgd2lkdGg9IjQ3Ljk5ODQiIGhlaWdodD0iNDUuOTk5OSIgdmlld0JveD0iMCAwIDQ3Ljk5ODQgNDUuOTk5OSIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGcgaWQ9Ikdyb3VwIDEwMDAwMDY4MzYiIGZpbHRlcj0idXJsKCNmaWx0ZXIwX2lfNjMyNF8zNjU0MikiPgo8cGF0aCBpZD0iVW5pb24iIGQ9Ik0xOS45NTM5IDAuOTM3NDVDMjEuODk1MyAtMC41NjY0MDcgMjQuNzQwNSAwLjMyNjI0NCAyNy4xODYgMC4xMDE5NTlDMzAuMTc0NSAtMC4xNzIxMzMgMzMuMjQyNCAwLjAxNTg4MjcgMzUuNzM4MSAxLjgwMjY4QzM3LjU0NTcgMy4xMDM5NiAzNy44ODU5IDUuNTc5MjkgMzcuMjkzNCA3LjcyNjI3QzM3LjEyMTIgOC4zNTAyOSAzNi45MTg4IDguOTUwMzggMzYuNjk3MSA5LjQ3NzQ5QzM1LjgwMzUgMTEuNjAxMyAzMy4zMzY2IDEyLjk5MzcgMzEuNjM0NiAxNC40MTZDMzEuMTM5OSAxNC44Mjk0IDI5Ljk2MjIgMTUuMzgyMiAyOS42MTg5IDE1Ljg2NDVDMjkuNjA4OCAxNS44Nzg2IDI5LjYwMTEgMTUuODkzOSAyOS41OTQ4IDE1LjkxQzI5LjU2ODYgMTUuOTc3IDI5LjU3MjggMTYuMDUyNSAyOS42MDkzIDE2LjExNDRDMjkuODM4NiAxNi41MDI2IDMwLjEzIDE2Ljc5MTcgMzAuNDYwMSAxNy4wNDQyQzMxLjE0NDYgMTcuNTY3OSAzMi4wNjcxIDE3LjY0MDYgMzIuODk2NiAxNy40MDY1QzMzLjYxNTkgMTcuMjAzNiAzNC4zMzQ4IDE3LjAxODkgMzUuMDgzOCAxNi44NzRDMzguNTkyMSAxNi4xOTU0IDQyLjgzOTYgMTYuOTM5IDQ0Ljc4NzcgMTkuMTExNkM0Ny43NTc4IDIyLjQyMzggNDguODc1NyAyOC4xOTM3IDQ3LjI1MjcgMzIuMzM1OUM0Ni43MDk3IDMzLjcyMTYgNDYuMjExNyAzNC4zMzY1IDQ1LjMzMzcgMzQuODc2OUM0NC41NDQ5IDM1LjM2MjQgNDQuMTMwOSAzNi4yNjAyIDQ0LjMyODkgMzcuMTY1QzQ0LjQ4NDMgMzcuODc1MiA0NC40OTU4IDM4LjQ1NDMgNDQuMDk2NSAzOS4wNzkxQzQzLjYxNDMgMzkuODMzMyA0Mi45MTgxIDQwLjQ4NDYgNDIuMDExNSA0MC42NTMzQzM5LjY2NTMgNDEuMDg5OCAzOC43Mzk5IDM5LjAyOTMgMzcuNzA2MSAzNi44MTI4QzM2LjYxNDcgMzQuNDcyOCAzMy45NTY3IDM1LjA4NjQgMzIuMjAyOSAzNi45ODE0QzMwLjM4ODEgMzguOTQyMiAyNi43ODgxIDQxLjYyMTYgMjMuOTk0IDQxLjY5MjNDMjMuMTM4OCA0MS43MDk5IDIyLjMxMSA0MS4zODk0IDIxLjY5MjIgNDAuODAxN0MyMS41ODMgNDAuNjk1OSAyMS40MTcyIDQwLjc5ODMgMjEuMzUzNyA0MC45MzY0QzIxLjA3NTggNDEuNTM5OSAyMC44MTY1IDQyLjE0MDUgMjAuMjkxOCA0Mi41NTQ2QzE3LjgxMTQgNDQuNTEyNiAxMi44MTI0IDQ2LjE4NSA5LjcwMDAxIDQ1Ljk4MzNDNy40NDg5NyA0NS44Mzc2IDQuODM0OTUgNDMuNTAxIDMuNTYyMzIgNDEuODAwN0MxLjI0NyAzOC43MDY5IC0wLjUwNDAzNyAzMy44MDA5IDAuMTMxNjU1IDI5LjkwMzNDMC43MTg1NjQgMjYuMzA0NiAzLjI5OTE0IDIxLjg3NzIgNi4xNTcwNSAxOS41NzQyQzYuMzE4MDQgMTkuNDQ0NSA2LjQ4NjM1IDE5LjMyMDcgNi42NTkzOSAxOS4yMDA2QzguMDQ0NTcgMTguMjM5MyA4Ljg2NjA1IDE2Ljc5NTMgOC44ODQ1OCAxNS4xMDkzQzguOTI0ODggMTIuNTI5OCA4LjgwMjY1IDkuODQ1NTIgOS4xMzM2MSA3LjI4NDEzQzkuMzc3ODEgNS4zOTUwMiAxMC44NjE3IDQuMjYzNjQgMTIuNzQ0OSA0LjY5MDM4QzE0LjUyOTUgNS4wOTQ4IDE3LjU3MjYgNC4yMzgwOSAxOC41MDU0IDIuNjYzOTNDMTguOTE0MyAxLjk3Mzg5IDE5LjM5NTkgMS4zNjk3NiAxOS45NTM5IDAuOTM3NDVaIiBmaWxsPSJ1cmwoI3BhaW50MF9saW5lYXJfNjMyNF8zNjU0MikiLz4KPHBhdGggaWQ9IlZlY3RvciIgZD0iTTI1LjQ2MzkgMTUuOTE0MkMyNS43Njk5IDExLjgyNiAxNy42MDgyIDE2LjEwMTEgMjEuMjk3NiAxNy44ODg2QzIyLjg5MTYgMTguNjYwOSAyNS4zMzE3IDE3LjY4MDUgMjUuNDYzOSAxNS45MTQyWiIgZmlsbD0iI0FGN0UwMCIvPgo8cGF0aCBpZD0iVmVjdG9yXzIiIGQ9Ik0yMy4wNDU5IDIwLjA1OTZDMjMuMzk4NyAxOS45MjMyIDIzLjc4MjggMTkuODY1MiAyNC4xNjA2IDE5Ljg0NzdDMzEuMDE2OCAxOS41MzAyIDI3LjAyMDcgMjQuNDk2IDIzLjM1NzYgMjYuMTQ1MkMyMy4yMjk1IDI2LjIwMjkgMjMuMDk2NCAyNi4yNDQ3IDIyLjk1OTUgMjYuMjc2MUMyMS40MTIgMjYuNjMxNSAxOS44NTYgMjUuNDMwMyAyMC4xNzExIDIzLjg3NDFDMjAuNDkzNiAyMi4yODE3IDIxLjI0OTkgMjAuNzUzNyAyMy4wNDU5IDIwLjA1OTZaIiBmaWxsPSIjQUY3RTAwIi8+CjwvZz4KPGRlZnM+CjxmaWx0ZXIgaWQ9ImZpbHRlcjBfaV82MzI0XzM2NTQyIiB4PSIwIiB5PSIwIiB3aWR0aD0iNDcuOTk4NCIgaGVpZ2h0PSI0NS45OTk5IiBmaWx0ZXJVbml0cz0idXNlclNwYWNlT25Vc2UiIGNvbG9yLWludGVycG9sYXRpb24tZmlsdGVycz0ic1JHQiI+CjxmZUZsb29kIGZsb29kLW9wYWNpdHk9IjAiIHJlc3VsdD0iQmFja2dyb3VuZEltYWdlRml4Ii8+CjxmZUJsZW5kIG1vZGU9Im5vcm1hbCIgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iQmFja2dyb3VuZEltYWdlRml4IiByZXN1bHQ9InNoYXBlIi8+CjxmZUNvbG9yTWF0cml4IGluPSJTb3VyY2VBbHBoYSIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDEyNyAwIiByZXN1bHQ9ImhhcmRBbHBoYSIvPgo8ZmVPZmZzZXQvPgo8ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSI4Ii8+CjxmZUNvbXBvc2l0ZSBpbjI9ImhhcmRBbHBoYSIgb3BlcmF0b3I9ImFyaXRobWV0aWMiIGsyPSItMSIgazM9IjEiLz4KPGZlQ29sb3JNYXRyaXggdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMC45NDUwOTggMCAwIDAgMCAwLjUyOTQxMiAwIDAgMCAwIDAuMDYyNzQ1MSAwIDAgMCAwLjQgMCIvPgo8ZmVCbGVuZCBtb2RlPSJub3JtYWwiIGluMj0ic2hhcGUiIHJlc3VsdD0iZWZmZWN0MV9pbm5lclNoYWRvd182MzI0XzM2NTQyIi8+CjwvZmlsdGVyPgo8bGluZWFyR3JhZGllbnQgaWQ9InBhaW50MF9saW5lYXJfNjMyNF8zNjU0MiIgeDE9IjIzLjk5OTIiIHkxPSItMy4xNDM0ZS0wOSIgeDI9IjIzLjk5OTIiIHkyPSI0NS45OTk5IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wIHN0b3AtY29sb3I9IiM5NzZDMDAiLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjNTUxRjAwIi8+CjwvbGluZWFyR3JhZGllbnQ+CjwvZGVmcz4KPC9zdmc+Cg==', 'data:image/svg+xml;base64,PHN2ZyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiBvdmVyZmxvdz0idmlzaWJsZSIgc3R5bGU9ImRpc3BsYXk6IGJsb2NrOyIgd2lkdGg9IjM2IiBoZWlnaHQ9IjM0IiB2aWV3Qm94PSIwIDAgMzYgMzQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIGlkPSJHcm91cCAxMDAwMDA2ODM1IiBmaWx0ZXI9InVybCgjZmlsdGVyMF9pXzYzMjRfMzY1OTEpIj4KPHBhdGggaWQ9IlZlY3RvciIgZD0iTTMuNzI2ODggNi4zNTFDNi40NjQ0MiA1LjY3NTM3IDkuNjYzNzkgMy43NjgwNiAxMS42MjQxIDEuNzQxMzNDMTIuOTU0MiAwLjM2NjIwMyAxNS4wOTcxIC0wLjA5NzUxMyAxOC4xNDM4IDAuMDE2NTkxNEMyMi40ODQxIDAuMTc5MTc1IDI0LjEyMDMgLTAuMzEwNzg5IDI4LjI1NzUgMS44NzM4NEMyOS44OTUgMy4wMjY0NSAzMC44NzEgNS41NDk3NiAzMS45ODg4IDcuMjExMjVDMzIuNzI5MyA4LjMxMTk2IDMzLjMwMTQgOS41NzUyOSAzMy42ODk3IDEwLjUwNzhDMzUuMjI1OSAxNC4xOTc4IDM2LjQ2MDEgMTcuMjYwMiAzNS44MzMzIDIxLjM2MTRDMzUuNjc5OCAyMi4zNjUxIDM1Ljc2MzUgMjMuNjM2MyAzNS4zMTM4IDI0LjYyMzhDMzQuMTk5MSAyNi45MzM1IDMxLjQzNTQgMjkuMjkyOSAyOS4yMDIyIDMwLjI3ODVDMjguMzMzOSAzMC42NjE4IDI3LjI2ODEgMzAuNzU5NCAyNi4xMjY1IDMwLjY3NTFDMjEuOTg0NiAzMC4zNjkyIDE3LjQxMjQgMzMuMTE4NyAxMy4zMzMxIDMzLjg5ODlDMTAuMDAxMSAzNC41MzcxIDcuNTM4MTMgMzIuMDc0NyA3LjMyMjYxIDI4Ljc2ODFDNy4yNjMyMSAyNy44NTU2IDYuNjI0OTYgMjcuMTYzMSA1Ljc4NDcgMjYuODAyMkMzLjM2OTE3IDI1Ljc2NDkgMS40MTY5MSAyMy4zMzYgMS4xMDY4MiAyMC42NzhDMC44Mjk0OCAxOC4zMDEyIDEuNTkzMzQgMTUuOTg3IDAuNjgzNjEgMTMuNzczN0MwLjE0NTQ4NSAxMi40NjQ1IC0wLjIyNTIyNSAxMS4xMjgzIDAuMTU2Njg3IDkuOTUwNTZDMC42NTI3ODIgOC40NDYwMSAyLjIxNzEgNi43MjM1MyAzLjcyNjg4IDYuMzUxWiIgZmlsbD0idXJsKCNwYWludDBfbGluZWFyXzYzMjRfMzY1OTEpIi8+CjxwYXRoIGlkPSJWZWN0b3JfMiIgZD0iTTIzLjg4MDYgMTEuMTcwMkMyNi42Mzg5IDEwLjk2MjkgMzAuMTY5IDkuOTY0MjMgMzAuNDUyNiAxMi43MTU4QzMwLjY0ODMgMTQuNjE1OCAzMi4yOTE3IDE1Ljg0OTMgMzMuMTg0MiAxNy41MzhDMzMuMjE1MyAxNy41OTY3IDMzLjI0MTQgMTcuNjU2OSAzMy4yNjIyIDE3LjcxODZDMzMuNzM4NyAxOS4xMzYzIDMxLjUyNzMgMTguNzk0NyAzMS4wMDI3IDE4Ljc0MDVDMjkuMDk0NCAxOC41NDM2IDI3LjUxMTYgMTcuOTQ4NyAyNS43NTA4IDE3LjI1NzlDMjQuNTk0NSAxNi44MjkgMjMuMTk4MiAxNi4wNzM5IDIxLjk5OTYgMTYuNTAyMkMyMC4wNDE4IDE3LjIwMTYgMTcuNDkxIDE3LjI4NTIgMTcuMTc0IDE1LjIzMDVDMTYuOTY4MSAxMy44OTUzIDE3LjM1OTcgMTIuNjQ1MSAxOS4wNzQ3IDExLjcyNTlDMjAuMjY2MyAxMS4wODcyIDIxLjE0MTMgMTEuMDE0MiAyMi40MzY0IDExLjE1MTNDMjIuOTc0OSAxMS4xOTUyIDIzLjQ1MDUgMTEuMjAyNSAyMy44ODA2IDExLjE3MDJaIiBmaWxsPSIjQUY3RTAwIi8+CjwvZz4KPGRlZnM+CjxmaWx0ZXIgaWQ9ImZpbHRlcjBfaV82MzI0XzM2NTkxIiB4PSIxLjY1MTc3ZS0wOSIgeT0iMCIgd2lkdGg9IjM2IiBoZWlnaHQ9IjM0IiBmaWx0ZXJVbml0cz0idXNlclNwYWNlT25Vc2UiIGNvbG9yLWludGVycG9sYXRpb24tZmlsdGVycz0ic1JHQiI+CjxmZUZsb29kIGZsb29kLW9wYWNpdHk9IjAiIHJlc3VsdD0iQmFja2dyb3VuZEltYWdlRml4Ii8+CjxmZUJsZW5kIG1vZGU9Im5vcm1hbCIgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iQmFja2dyb3VuZEltYWdlRml4IiByZXN1bHQ9InNoYXBlIi8+CjxmZUNvbG9yTWF0cml4IGluPSJTb3VyY2VBbHBoYSIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDEyNyAwIiByZXN1bHQ9ImhhcmRBbHBoYSIvPgo8ZmVPZmZzZXQvPgo8ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSI4Ii8+CjxmZUNvbXBvc2l0ZSBpbjI9ImhhcmRBbHBoYSIgb3BlcmF0b3I9ImFyaXRobWV0aWMiIGsyPSItMSIgazM9IjEiLz4KPGZlQ29sb3JNYXRyaXggdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMC45NDUwOTggMCAwIDAgMCAwLjUyOTQxMiAwIDAgMCAwIDAuMDYyNzQ1MSAwIDAgMCAwLjQgMCIvPgo8ZmVCbGVuZCBtb2RlPSJub3JtYWwiIGluMj0ic2hhcGUiIHJlc3VsdD0iZWZmZWN0MV9pbm5lclNoYWRvd182MzI0XzM2NTkxIi8+CjwvZmlsdGVyPgo8bGluZWFyR3JhZGllbnQgaWQ9InBhaW50MF9saW5lYXJfNjMyNF8zNjU5MSIgeDE9IjE4IiB5MT0iMS43MDA0NWUtMDkiIHgyPSIxOCIgeTI9IjM0IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wIHN0b3AtY29sb3I9IiM5NzZDMDAiLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjNTUxRjAwIi8+CjwvbGluZWFyR3JhZGllbnQ+CjwvZGVmcz4KPC9zdmc+Cg=='],
+};
+const PC_SIZE = [[50, 42], [48, 46], [36, 34]];
+const EMBER = 'data:image/svg+xml,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><defs><linearGradient id="g" x1="20" y1="0" x2="20" y2="40" gradientUnits="userSpaceOnUse"><stop stop-color="#FFC233"/><stop offset=".45" stop-color="#FFE552"/><stop offset="1" stop-color="#FFE552"/></linearGradient></defs><path d="M40 23.3333C40 34.379 31.0457 40 20 40C8.9543 40 0 34.379 0 23.3333C0 12.2876 20 0 20 0C20 0 40 12.2876 40 23.3333Z" fill="url(#g)"/></svg>');
+const STAR_PATH = document.querySelector('#lv path').getAttribute('d');
+
+/* ---------- copy ---------- */
+const T = {
+  heat: 'Heat', shake: 'Shake', burn: 'Burn',
+  heatV: ['None', 'Low', 'Medium', 'High'], shakeV: ['Low', 'OK', 'Wild!'],
+  ready: 'Ready?', go: 'Go!', pop: 'Pop!', wonderful: 'Wonderful!', watch: 'Watch out!',
+  hint: 'Tap to start', hintMotion: 'Tap, then shake your phone!',
+  clear: ['Good!', 'Great!', 'Perfect!'], burnt: 'Burnt!', timeout: "Time's up!", spilled: 'Spilled!',
+  next: 'Next Level', retry: 'Retry',
+};
+
+/* ---------- levels ---------- */
+const LEVELS = [
+  { n: 20, time: 35, line: .34, burn: 24, rec: 10,  heat: 6.2, decay: 2.4, move: 0,  spill: 0 },
+  { n: 26, time: 38, line: .42, burn: 30, rec: 8,   heat: 5.6, decay: 2.7, move: 0,  spill: 0 },
+  { n: 32, time: 42, line: .50, burn: 36, rec: 6.5, heat: 5.1, decay: 3.0, move: 9,  spill: 0 },
+  { n: 38, time: 46, line: .56, burn: 42, rec: 5,   heat: 4.7, decay: 3.3, move: 14, spill: .2 },
+  { n: 44, time: 50, line: .62, burn: 50, rec: 4,   heat: 4.3, decay: 3.6, move: 20, spill: .3 },
+];
+const HOME = { x: 50, y: 82 };
+const PAN_R = 108;         // inner radius, pan-local px
+const UNIT = 270 / 56;     // pan-local px per game unit
+
+/* ---------- dom ---------- */
+const $ = s => document.querySelector(s);
+const app = $('#app'), panEl = $('#pan'), flamesEl = $('#flames'), itemsEl = $('#items');
+const panFloor = $('.inner'), countEl = $('#count'), lvEl = $('#lv'), lvText = $('#lvText');
+const timerEl = $('#timer'), msgEl = $('#msg span');
+const topbar = $('#topbar'), rtitle = $('#rtitle'), rbtn = $('#rbtn'), starsEl = $('#stars');
+const stat = id => { const el = $(id); return { el, v: el.querySelector('.v'), bar: el.querySelector('.bar i'), line: el.querySelector('.bar b') }; };
+const S = { heat: stat('#sHeat'), shake: stat('#sShake'), burn: stat('#sBurn') };
+
+for (let i = 0; i < 10; i++) {
+  const f = document.createElement('div');
+  f.className = 'flame';
+  f.style.transform = `rotate(${i * 36}deg) translateY(-86px)`;
+  const inner = document.createElement('i');
+  inner.style.setProperty('--ember', `url("${EMBER}")`);
+  inner.style.transitionDelay = `${i * 0.035}s`;
+  inner.style.animationDelay = `${-Math.random()}s`;
+  inner.style.animationDuration = `${0.7 + Math.random() * 0.5}s`;
+  f.appendChild(inner);
+  flamesEl.appendChild(f);
+}
+
+/* ---------- storage ---------- */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+
+/* ---------- state ---------- */
+let best = store.get('popPan.best', [0, 0, 0, 0, 0]);
+const st = {
+  phase: 'title', lv: 0, t: 0, timeLeft: 0,
+  pan: { ...HOME }, burner: { ...HOME },
+  shake: 0, scorch: 0, hf: 0, tilt: 0,
+  frameDx: 0, panVel: { x: 0, y: 0 },
+  items: [], popped: 0, spilled: 0, cheered: false,
+  introT: 0,
+};
+let L = {};       // layout
+
+/* ---------- sound (synthesized with Web Audio, no files) ---------- */
+const sfx = (() => {
+  let ctx = null, master = null, sizzle = null, noiseBuf = null, lastPop = 0, sizzleLv = -1;
+  let muted = store.get('popPan.muted', false);
+  function init() {
+    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ctx = new AC();
+    master = ctx.createGain();
+    master.gain.value = muted ? 0 : 0.8;
+    master.connect(ctx.destination);
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    // looping oil sizzle, faded in/out with the heat under the pan
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuf; src.loop = true;
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2600;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 9000;
+    sizzle = ctx.createGain(); sizzle.gain.value = 0;
+    src.connect(hp).connect(lp).connect(sizzle).connect(master);
+    src.start();
+  }
+  const ok = () => ctx && ctx.state === 'running';
+  function tone(freq, at, dur, { type = 'sine', vol = 0.25, to = null } = {}) {
+    const t0 = ctx.currentTime + at;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+    if (to) o.frequency.exponentialRampToValueAtTime(to, t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol, t0 + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g).connect(master);
+    o.start(t0); o.stop(t0 + dur + 0.02);
+  }
+  function noise(at, dur, { vol = 0.3, freq = 1500, q = 1, type = 'bandpass', to = null } = {}) {
+    const t0 = ctx.currentTime + at;
+    const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = noiseBuf;
+    f.type = type; f.Q.value = q; f.frequency.setValueAtTime(freq, t0);
+    if (to) f.frequency.exponentialRampToValueAtTime(to, t0 + dur);
+    g.gain.setValueAtTime(vol, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    s.connect(f).connect(g).connect(master);
+    s.start(t0, Math.random() * 0.5); s.stop(t0 + dur + 0.02);
+  }
+  const notes = (list, gap, opts) => list.forEach((f, i) => tone(f, i * gap, opts.dur || 0.2, opts));
+  return {
+    init,
+    get muted() { return muted; },
+    toggle() {
+      muted = !muted;
+      store.set('popPan.muted', muted);
+      if (master) master.gain.setTargetAtTime(muted ? 0 : 0.8, ctx.currentTime, 0.02);
+      return muted;
+    },
+    pop() {
+      if (!ok()) return;
+      const now = performance.now();
+      if (now - lastPop < 30) return;
+      lastPop = now;
+      const r = Math.random();
+      noise(0, 0.05, { vol: 0.55, freq: 1400 + r * 1600, q: 0.9 });
+      tone(420 + r * 380, 0, 0.09, { type: 'triangle', vol: 0.22, to: 160 });
+    },
+    sizzle(level) {
+      if (!ok() || Math.abs(level - sizzleLv) < 0.02) return;
+      sizzleLv = level;
+      sizzle.gain.setTargetAtTime(level * 0.09, ctx.currentTime, 0.12);
+    },
+    tap() { if (ok()) tone(880, 0, 0.06, { type: 'triangle', vol: 0.15 }); },
+    ready() { if (ok()) tone(523, 0, 0.16, { type: 'triangle', vol: 0.18 }); },
+    go() { if (ok()) { tone(784, 0, 0.1, { type: 'square', vol: 0.08 }); tone(1047, 0.09, 0.22, { type: 'square', vol: 0.08 }); } },
+    tick() { if (ok()) tone(1200, 0, 0.05, { type: 'sine', vol: 0.12 }); },
+    warn() { if (ok()) { tone(370, 0, 0.12, { type: 'square', vol: 0.07 }); tone(370, 0.17, 0.12, { type: 'square', vol: 0.07 }); } },
+    spill() { if (ok()) noise(0, 0.35, { vol: 0.25, freq: 600, to: 3500, q: 2 }); },
+    clear() { if (ok()) notes([523, 659, 784, 1047], 0.09, { type: 'triangle', vol: 0.2, dur: 0.25 }); },
+    fail() { if (ok()) { tone(330, 0, 0.25, { type: 'sawtooth', vol: 0.07, to: 260 }); tone(247, 0.22, 0.5, { type: 'sawtooth', vol: 0.07, to: 150 }); } },
+    allClear() {
+      if (!ok()) return;
+      notes([523, 659, 784, 1047, 784, 1047, 1319], 0.11, { type: 'triangle', vol: 0.2, dur: 0.3 });
+      notes([262, 330, 392, 523], 0.22, { type: 'sine', vol: 0.12, dur: 0.4 });
+    },
+  };
+})();
+// browsers only allow audio after a user gesture
+['pointerdown', 'touchend', 'click', 'keydown'].forEach(ev => window.addEventListener(ev, () => sfx.init(), { passive: true }));
+const soundBtn = document.getElementById('sound');
+const syncSoundBtn = () => {
+  soundBtn.classList.toggle('off', sfx.muted);
+  soundBtn.setAttribute('aria-pressed', String(!sfx.muted));
+  soundBtn.setAttribute('aria-label', sfx.muted ? 'Sound off' : 'Sound on');
+};
+soundBtn.addEventListener('click', () => { sfx.init(); sfx.toggle(); syncSoundBtn(); sfx.tap(); });
+syncSoundBtn();
+
+/* ---------- device motion (phones: shake the phone to shake the pan) ---------- */
+const canMotion = 'DeviceMotionEvent' in window && matchMedia('(pointer: coarse)').matches;
+const motion = { on: false, asked: false, g: null, lastT: 0, tx: 0, ty: 0, jx: 0, jy: 0, kx: 0, ky: 0 };
+function requestMotion() {
+  if (!canMotion || motion.asked || motion.on) return;
+  motion.asked = true;
+  // iOS only delivers motion events after permission, which must be asked from a tap
+  const D = window.DeviceMotionEvent;
+  if (typeof D.requestPermission === 'function') D.requestPermission().catch(() => {});
+}
+if (canMotion) window.addEventListener('devicemotion', onMotion);
+function onMotion(e) {
+  let ax, ay, az;
+  const a = e.acceleration;
+  if (a && a.x != null) { ax = a.x; ay = a.y; az = a.z || 0; }
+  else {
+    // no gravity-free reading: high-pass the raw one
+    const g = e.accelerationIncludingGravity;
+    if (!g || g.x == null) return;
+    motion.g = motion.g ? { x: motion.g.x * 0.9 + g.x * 0.1, y: motion.g.y * 0.9 + g.y * 0.1, z: motion.g.z * 0.9 + (g.z || 0) * 0.1 } : { x: g.x, y: g.y, z: g.z || 0 };
+    ax = g.x - motion.g.x; ay = g.y - motion.g.y; az = (g.z || 0) - motion.g.z;
+  }
+  const dt = motion.lastT ? Math.max(0, Math.min(0.05, (e.timeStamp - motion.lastT) / 1000)) : 0.016;
+  motion.lastT = e.timeStamp;
+  motion.on = true;
+
+  // device axes -> screen axes (x right, y down)
+  const ang = ((screen.orientation && screen.orientation.angle) || window.orientation || 0) * Math.PI / 180;
+  const sx = ax * Math.cos(ang) + ay * Math.sin(ang);
+  const sy = -(-ax * Math.sin(ang) + ay * Math.cos(ang));
+  const m = Math.hypot(ax, ay, az);
+
+  if (st.phase === 'ready' && m > 12) start();
+  if (st.phase === 'cooking') st.shake = Math.min(1, st.shake + Math.max(0, m - 2.5) * 0.2 * dt);
+
+  motion.tx = Math.max(-28, Math.min(28, sx * 2.2));
+  motion.ty = Math.max(-28, Math.min(28, sy * 2.2));
+  motion.kx += sx * dt; motion.ky += sy * dt;
+}
+let lastBuzz = 0;
+function buzz(ms) {
+  if (!motion.on || !navigator.vibrate) return;
+  const now = performance.now();
+  if (now - lastBuzz < 60) return;
+  lastBuzz = now;
+  try { navigator.vibrate(ms); } catch {}
+}
+let msgTimer = 0, lastPopMsg = 0, lastWarn = -9;
+
+/* ---------- layout ---------- */
+function layout() {
+  const W = app.clientWidth, H = app.clientHeight;
+  const panPx = Math.min(270, H * 0.34, W * 0.75);
+  const k = panPx / 270;
+  const s = panPx / 56;
+  const logo = $('#logo').getBoundingClientRect();
+  const room = H - logo.bottom - 36 - 110;
+  const tk = Math.max(0.35, Math.min(k, room / 371));
+  L = { W, H, k, s, cx: W / 2, cy: H / 2, tk, titleY: logo.bottom + 36 + 135 * tk };
+}
+const toScreen = p => ({ x: L.cx + (p.x - HOME.x) * L.s, y: L.cy + (p.y - HOME.y) * L.s });
+
+/* ---------- copy ---------- */
+function applyText() {
+  document.querySelectorAll('[data-t]').forEach(el => el.textContent = T[el.dataset.t]);
+  $('#hint').textContent = canMotion ? T.hintMotion : T.hint;
+}
+
+/* ---------- message ---------- */
+function showMsg(text, mode = 'in') {
+  msgEl.textContent = text;
+  msgEl.className = '';
+  void msgEl.offsetWidth;
+  msgEl.classList.add(mode);
+  clearTimeout(msgTimer);
+  if (mode === 'in') msgTimer = setTimeout(() => { msgEl.classList.remove('in'); msgEl.classList.add('out'); }, 1100);
+}
+function hideMsg() { clearTimeout(msgTimer); msgEl.className = 'out'; }
+
+
+/* ---------- items ---------- */
+function randInPan(r) {
+  const a = Math.random() * Math.PI * 2, d = Math.sqrt(Math.random()) * (PAN_R - r - 6);
+  return { x: Math.cos(a) * d, y: Math.sin(a) * d };
+}
+function buildItems() {
+  itemsEl.innerHTML = '';
+  const lv = LEVELS[st.lv];
+  const scale = Math.max(0.62, Math.min(1, Math.sqrt(20 / lv.n)));
+  st.items = [];
+  for (let i = 0; i < lv.n; i++) {
+    const el = document.createElement('div');
+    el.className = 'item kernel in';
+    el.innerHTML = `<img src="${IMG.kernel}" alt="" style="animation-delay:${i * 0.018}s">`;
+    itemsEl.appendChild(el);
+    const p = randInPan(9);
+    st.items.push({ el, x: p.x, y: p.y, vx: 0, vy: 0, z: 0, vz: 0, r: 9 * scale, scale,
+      rot: Math.random() * 360, popped: false, gone: false, spill: 0,
+      thr: 55 + Math.random() * 45, heat: 0, h: -1 });
+  }
+}
+function popItem(it) {
+  it.popped = true;
+  const v = Math.floor(Math.random() * 3);
+  const [w, h] = PC_SIZE[v];
+  it.r = Math.min(w, h) / 2 * 0.8 * it.scale;
+  it.rot = Math.random() * 60 - 30;
+  it.vz = 140 + Math.random() * 80;
+  it.el.className = 'item popped';
+  it.el.style.width = w * it.scale + 'px';
+  it.el.style.height = h * it.scale + 'px';
+  it.el.style.filter = '';
+  it.el.innerHTML = `<div class="pc pop"><img src="${IMG.pc[v]}" alt=""><img class="b" src="${IMG.pcBurnt[v]}" alt=""></div><div class="puff"></div>`;
+  setTimeout(() => it.el.querySelector('.puff')?.remove(), 500);
+  st.popped++;
+  buzz(12);
+  sfx.pop();
+  const now = performance.now();
+  if (now - lastPopMsg > 450 && st.scorch < 65) { lastPopMsg = now; showMsg(T.pop); }
+}
+function spillItem(it) {
+  it.spill = 0.001;
+  st.spilled++;
+  const a = Math.atan2(it.y || 1e-3, it.x || 1e-3);
+  const sp = 260 + Math.random() * 120;
+  it.vx = Math.cos(a) * sp; it.vy = Math.sin(a) * sp;
+  it.vz = 260;
+  it.el.classList.add('spill');
+  sfx.spill();
+}
+
+/* ---------- phases ---------- */
+function setPhase(p) {
+  st.phase = p;
+  app.classList.remove('title', 'ready', 'playing', 'result', 'showmodal');
+  soundBtn.classList.toggle('hide', p === 'title');
+  app.classList.add(p === 'cooking' ? 'playing' : (['clear', 'burnt', 'timeout', 'spilled'].includes(p) ? 'result' : p));
+}
+
+function goReady(fromTitle) {
+  const lv = LEVELS[st.lv];
+  if (!fromTitle) setPhase('ready');
+  Object.assign(st, { t: 0, timeLeft: lv.time, shake: 0, scorch: 0, hf: 0, popped: 0, spilled: 0, cheered: false });
+  if (!fromTitle) { st.pan = { ...HOME }; }
+  st.burner = { ...HOME };
+  buildItems();
+  lvText.textContent = `Lv.${st.lv + 1}`;
+  countEl.textContent = `0/${lv.n}`;
+  S.shake.line.style.left = (lv.line * 100) + '%';
+  timerEl.textContent = lv.time + 's';
+  timerEl.classList.remove('urgent');
+  flamesEl.classList.remove('on');
+  if (!fromTitle) beginCountdown();
+}
+
+function leaveTitle() {
+  if (st.phase !== 'title' || app.classList.contains('away')) return;
+  app.classList.add('away');
+  st.introT = 0.0001;
+  goReady(true);
+  setTimeout(() => {
+    app.classList.remove('away');
+    setPhase('ready');
+    beginCountdown();
+  }, 380);
+}
+
+// "Ready?" -> "Go!" -> cooking starts on its own
+let cdTimer = 0;
+function beginCountdown() {
+  clearTimeout(cdTimer);
+  showMsg(T.ready, 'idle');
+  sfx.ready();
+  cdTimer = setTimeout(start, 1200);
+}
+
+function start() {
+  if (st.phase !== 'ready') return;
+  setPhase('cooking');
+  flamesEl.classList.add('on');
+  clearTimeout(cdTimer);
+  showMsg(T.go);
+  sfx.go();
+}
+
+function finish(result) {
+  setPhase(result);
+  flamesEl.classList.remove('on');
+  buzz(result === 'clear' ? 40 : 180);
+  sfx.sizzle(0);
+  if (!(result === 'clear' && st.lv === LEVELS.length - 1)) result === 'clear' ? sfx.clear() : sfx.fail();
+  hideMsg();
+  const t = T;
+  let stars = 0, title;
+  if (result === 'clear') {
+    stars = st.scorch < 25 && st.spilled === 0 ? 3 : st.scorch < 60 ? 2 : 1;
+    title = t.clear[stars - 1];
+    if (stars > best[st.lv]) { best[st.lv] = stars; store.set('popPan.best', best); }
+  } else title = t[result];
+
+  rtitle.textContent = title;
+  starsEl.innerHTML = result === 'clear'
+    ? [0, 1, 2].map(i => `<svg viewBox="0 0 14.2656 14.2656" class="${i < stars ? '' : 'off'}" style="animation-delay:${0.3 + i * 0.12}s"><path d="${STAR_PATH}" fill="#2AE420"/></svg>`).join('')
+    : '';
+  if (result === 'clear' && st.lv === LEVELS.length - 1) {
+    setTimeout(showAllClear, 600);
+    return;
+  }
+  rbtn.textContent = result === 'clear' ? t.next : t.retry;
+  rbtn.onclick = () => {
+    sfx.tap();
+    if (result === 'clear') st.lv++;
+    app.classList.remove('showmodal');
+    setTimeout(() => goReady(false), 220);
+  };
+  setTimeout(() => {
+    app.classList.add('showmodal');
+    fitTitle();
+  }, 450);
+}
+/* ---------- all clear ---------- */
+const starSvg = (on, delay) => `<svg viewBox="0 0 14.2656 14.2656" class="${on ? '' : 'off'}" style="animation-delay:${delay}s"><path d="${STAR_PATH}" fill="#2AE420"/></svg>`;
+function showAllClear() {
+  const total = best.reduce((a, b) => a + b, 0);
+  $('#acCard').innerHTML = LEVELS.map((_, i) =>
+    `<div class="acRow"><div class="lv">${starSvg(true, 0)}<span>Lv.${i + 1}</span></div>
+      <div class="st">${[0, 1, 2].map(j => starSvg(j < best[i], 0.35 + i * 0.08 + j * 0.06)).join('')}</div></div>`).join('') +
+    `<div class="acTotal"><span>Total</span><span>${total}/${LEVELS.length * 3}</span></div>`;
+  const rain = $('#rain');
+  rain.innerHTML = '';
+  for (let i = 0; i < 16; i++) {
+    const v = i % 3, [w, h] = PC_SIZE[v], s = 0.7 + Math.random() * 0.8;
+    const el = document.createElement('i');
+    el.style.cssText = `left:${Math.random() * 100}%;width:${w * s}px;height:${h * s}px;background-image:url("${IMG.pc[v]}");` +
+      `animation-duration:${3.5 + Math.random() * 3}s;animation-delay:${-Math.random() * 6}s;--spin:${(Math.random() < 0.5 ? -1 : 1) * (180 + Math.random() * 360)}deg`;
+    rain.appendChild(el);
+  }
+  app.classList.add('allclear');
+  sfx.allClear();
+}
+$('#acBtn').addEventListener('click', () => {
+  sfx.tap();
+  st.lv = 0;
+  app.classList.remove('allclear');
+  setTimeout(() => goReady(false), 250);
+});
+
+function fitTitle() {
+  let size = 48;
+  rtitle.style.fontSize = size + 'px';
+  const max = $('#card').clientWidth - 32;
+  while (rtitle.scrollWidth > max && size > 26) { size -= 2; rtitle.style.fontSize = size + 'px'; }
+}
+
+/* ---------- input ---------- */
+let drag = null;
+function movePan(dx, dy, addShake = true) {
+  const nx = Math.max(24, Math.min(76, st.pan.x + dx));
+  const ny = Math.max(46, Math.min(104, st.pan.y + dy));
+  const dist = Math.hypot(nx - st.pan.x, ny - st.pan.y);
+  st.frameDx += nx - st.pan.x;
+  st.pan.x = nx; st.pan.y = ny;
+  if (addShake) st.shake = Math.min(1, st.shake + dist / 30);
+}
+app.addEventListener('pointerdown', e => {
+  if (e.target.closest('button,#topbar')) return;
+  if (st.phase === 'title') { leaveTitle(); return; }
+  if (st.phase === 'ready') start();
+  if (st.phase !== 'cooking') return;
+  drag = { id: e.pointerId, x: e.clientX, y: e.clientY };
+  app.classList.add('dragging');
+  try { app.setPointerCapture(e.pointerId); } catch {}
+});
+app.addEventListener('pointermove', e => {
+  if (!drag || e.pointerId !== drag.id || st.phase !== 'cooking') return;
+  const dx = (e.clientX - drag.x) / L.s, dy = (e.clientY - drag.y) / L.s;
+  drag.x = e.clientX; drag.y = e.clientY;
+  movePan(dx, dy, !motion.on);   // with motion on, only the phone shakes the pan
+});
+const endDrag = e => { if (drag && e.pointerId === drag.id) { drag = null; app.classList.remove('dragging'); } };
+app.addEventListener('pointerup', endDrag);
+app.addEventListener('click', requestMotion);
+app.addEventListener('pointercancel', endDrag);
+
+const KEYS = { ArrowLeft: [-5, 0], ArrowRight: [5, 0], ArrowUp: [0, -5], ArrowDown: [0, 5] };
+window.addEventListener('keydown', e => {
+  if (app.classList.contains('allclear') && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); $('#acBtn').click(); return; }
+  if (app.classList.contains('showmodal') && (e.key === 'Enter' || e.key === ' ') && document.activeElement !== rbtn) { e.preventDefault(); rbtn.click(); return; }
+  if (st.phase === 'title' && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); leaveTitle(); return; }
+  if (KEYS[e.key]) {
+    e.preventDefault();
+    if (st.phase === 'ready') start();
+    if (st.phase === 'cooking') movePan(...KEYS[e.key]);
+  } else if (st.phase === 'ready' && (e.key === 'Enter' || e.key === ' ') && document.activeElement !== topbar) {
+    e.preventDefault(); start();
+  } else if (st.phase === 'ready' && /^[1-5]$/.test(e.key)) {
+    pickLevel(+e.key - 1);
+  }
+});
+
+function pickLevel(i) {
+  if (st.phase !== 'ready') return;
+  st.lv = i;
+  lvEl.classList.remove('spin'); void lvEl.offsetWidth; lvEl.classList.add('spin');
+  goReady(false);
+}
+topbar.addEventListener('click', () => { sfx.tap(); pickLevel((st.lv + 1) % LEVELS.length); });
+topbar.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); pickLevel((st.lv + 1) % LEVELS.length); } });
+window.addEventListener('resize', layout);
+
+/* ---------- HUD ---------- */
+let lastLabels = {}, lastSec = -1;
+function setLabel(key, text) {
+  if (lastLabels[key] === text) return;
+  lastLabels[key] = text;
+  S[key].v.textContent = text;
+}
+function renderHud() {
+  const t = T, lv = LEVELS[st.lv];
+  const hf = st.hf;
+  setLabel('heat', t.heatV[hf < 0.05 ? 0 : hf < 0.4 ? 1 : hf < 0.75 ? 2 : 3]);
+  setLabel('shake', t.shakeV[lv.spill && st.shake > 0.85 ? 2 : st.shake >= lv.line ? 1 : 0]);
+  setLabel('burn', Math.floor(st.scorch) + '%');
+  S.heat.bar.style.transform = `scaleX(${hf})`;
+  S.shake.bar.style.transform = `scaleX(${st.shake})`;
+  S.burn.bar.style.transform = `scaleX(${st.scorch / 100})`;
+  S.burn.el.classList.toggle('alarm', st.phase === 'cooking' && st.scorch > 65);
+  const inPan = st.popped - st.spilled;
+  const c = `${inPan}/${lv.n}`;
+  if (countEl.textContent !== c) countEl.textContent = c;
+  const sec = Math.max(0, Math.ceil(st.timeLeft));
+  if (sec !== lastSec) {
+    lastSec = sec;
+    timerEl.textContent = sec + 's';
+    if (st.phase === 'cooking') {
+      timerEl.classList.toggle('urgent', sec <= 10);
+      if (sec <= 10 && sec > 0) sfx.tick();
+    }
+  }
+}
+
+/* ---------- simulation ---------- */
+function update(dt) {
+  const lv = LEVELS[st.lv];
+  if (st.phase === 'cooking') {
+    st.t += dt;
+    st.timeLeft -= dt;
+    st.shake *= Math.exp(-lv.decay * dt);
+
+    if (lv.move) {
+      st.burner.x = HOME.x + lv.move * Math.sin(0.9 * st.t) + (st.lv === 4 ? lv.move * 0.25 * Math.sin(2.3 * st.t) : 0);
+      st.burner.y = HOME.y + lv.move * 0.45 * Math.cos(0.7 * st.t);
+    }
+    const d = Math.hypot(st.pan.x - st.burner.x, st.pan.y - st.burner.y);
+    st.hf = Math.max(0, 1 - d / 24);
+
+    if (st.hf > 0.25) {
+      if (st.shake < lv.line) st.scorch += dt * st.hf * lv.burn;
+      else st.scorch -= dt * st.hf * lv.rec;
+    } else st.scorch -= dt * lv.rec * 0.6;
+    st.scorch = Math.max(0, Math.min(100, st.scorch));
+
+    const inc = dt * lv.heat * st.hf * (0.4 + st.shake);
+    for (const it of st.items) {
+      if (it.popped) continue;
+      it.heat += inc;
+      if (it.heat >= it.thr) popItem(it);
+    }
+
+    const target = Math.ceil(lv.n * 0.7);
+    const inPan = st.popped - st.spilled;
+    if (!st.cheered && inPan >= target) { st.cheered = true; showMsg(T.wonderful); }
+    if (st.scorch > 65 && st.t - lastWarn > 2) { lastWarn = st.t; showMsg(T.watch); sfx.warn(); }
+
+    if (st.scorch >= 100) return finish('burnt');
+    if (lv.n - st.spilled < target) return finish('spilled');
+    if (st.popped >= lv.n) return finish(inPan >= target ? 'clear' : 'spilled');
+    if (st.timeLeft <= 0) { st.timeLeft = 0; return finish(inPan >= target ? 'clear' : 'timeout'); }
+  } else if (st.phase === 'ready' || st.phase === 'title') {
+    st.hf = 0;
+  }
+
+  // pan tilt from horizontal speed
+  const vx = st.frameDx / Math.max(dt, 1e-3);
+  const tiltTarget = Math.max(-14, Math.min(14, vx * 0.12 + motion.jx * 0.5));
+  st.tilt += (tiltTarget - st.tilt) * Math.min(1, dt * 14);
+
+  // pan velocity (pan-local px/s) for item inertia
+  const pvx = vx * UNIT;
+  const dvx = pvx - st.panVel.x;
+  st.panVel.x = pvx;
+  st.frameDx = 0;
+
+  sfx.sizzle(st.phase === 'cooking' ? st.hf * (0.6 + 0.4 * st.shake) : 0);
+  simItems(dt, dvx, motion.kx * 40, motion.ky * 40);
+  motion.kx = motion.ky = 0;
+}
+
+function simItems(dt, dvx, kx = 0, ky = 0) {
+  const lv = LEVELS[st.lv];
+  const cooking = st.phase === 'cooking';
+  const shake = st.shake;
+  const items = st.items;
+  const damp = Math.exp(-3.2 * dt);
+  for (const it of items) {
+    if (it.gone) continue;
+    if (it.spill) {
+      it.spill += dt;
+      it.x += it.vx * dt; it.y += it.vy * dt;
+      it.vz -= 900 * dt; it.z += it.vz * dt;
+      if (it.spill > 0.08 && !it.faded) { it.faded = true; it.el.style.opacity = 0; }
+      if (it.spill > 0.8) { it.gone = true; it.el.remove(); }
+      continue;
+    }
+    // slosh with pan motion + random agitation from shaking
+    it.vx -= Math.max(-400, Math.min(400, dvx)) * 0.55 + kx;
+    it.vy -= ky;
+    if (cooking && shake > 0.05) {
+      it.vx += (Math.random() - 0.5) * 900 * shake * dt;
+      it.vy += (Math.random() - 0.5) * 900 * shake * dt;
+    }
+    it.vx *= damp; it.vy *= damp;
+    it.x += it.vx * dt; it.y += it.vy * dt;
+
+    // hop
+    if (it.z > 0 || it.vz > 0) {
+      it.vz -= 900 * dt; it.z += it.vz * dt;
+      if (it.z <= 0) { it.z = 0; it.vz = 0; }
+    } else if (cooking && it.popped && shake >= 0.3 && Math.random() < shake * 2.2 * dt) {
+      it.vz = 110 + shake * 170;
+      if (lv.spill && shake > 0.85 && Math.random() < lv.spill) spillItem(it);
+    }
+
+    // keep inside pan
+    const lim = PAN_R - it.r;
+    const dist = Math.hypot(it.x, it.y);
+    if (dist > lim) {
+      const nx = it.x / dist, ny = it.y / dist;
+      it.x = nx * lim; it.y = ny * lim;
+      const vn = it.vx * nx + it.vy * ny;
+      if (vn > 0) { it.vx -= 1.5 * vn * nx; it.vy -= 1.5 * vn * ny; }
+    }
+  }
+  // soft separation
+  for (let i = 0; i < items.length; i++) {
+    const a = items[i]; if (a.gone || a.spill) continue;
+    for (let j = i + 1; j < items.length; j++) {
+      const b = items[j]; if (b.gone || b.spill) continue;
+      const dx = b.x - a.x, dy = b.y - a.y, min = (a.r + b.r) * 0.85;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < min * min && d2 > 1e-4) {
+        const d = Math.sqrt(d2), push = (min - d) * 0.25 / d;
+        a.x -= dx * push; a.y -= dy * push; b.x += dx * push; b.y += dy * push;
+      }
+    }
+  }
+}
+
+/* ---------- render ---------- */
+const ease = t => 1 - Math.pow(1 - t, 3);
+function render(dt) {
+  // pan position (glide from title to game spot)
+  let p = toScreen(st.pan), pk = L.k;
+  if (st.phase === 'title' || st.introT > 0) {
+    const bob = Math.sin(performance.now() / 600) * 6;
+    const tp = { x: L.cx, y: L.titleY + bob };
+    if (st.introT > 0) {
+      st.introT = Math.min(1, st.introT + dt / 0.75);
+      const e = ease(st.introT);
+      p = { x: tp.x + (p.x - tp.x) * e, y: tp.y + (p.y - tp.y) * e };
+      pk = L.tk + (L.k - L.tk) * e;
+      if (st.introT >= 1) st.introT = 0;
+    } else { p = tp; pk = L.tk; }
+  }
+  const f = Math.min(1, dt * 18);
+  motion.jx += (motion.tx - motion.jx) * f; motion.jy += (motion.ty - motion.jy) * f;
+  motion.tx *= Math.exp(-6 * dt); motion.ty *= Math.exp(-6 * dt);
+  if (st.phase !== 'title') { p.x += motion.jx; p.y += motion.jy; }
+  panEl.style.transform = `translate(${p.x - 135}px, ${p.y - 135}px) rotate(${st.tilt.toFixed(2)}deg) scale(${pk})`;
+  const b = toScreen(st.burner);
+  flamesEl.style.transform = `translate(${b.x}px, ${b.y}px) scale(${L.k})`;
+  panFloor.style.setProperty('--heat', (st.hf * 0.95).toFixed(3));
+  itemsEl.style.setProperty('--burn', (st.scorch / 100).toFixed(3));
+
+  const shake = st.phase === 'cooking' ? st.shake : 0;
+  for (const it of st.items) {
+    if (it.gone) continue;
+    let jx = 0, jy = 0;
+    if (!it.popped) {
+      const ratio = Math.min(1, it.heat / it.thr);
+      const amp = shake * 1.2 + (ratio > 0.8 ? 1.4 : 0);
+      if (amp > 0.05) { jx = (Math.random() - 0.5) * amp * 2; jy = (Math.random() - 0.5) * amp * 2; }
+      if (Math.abs(ratio - it.h) > 0.03) {
+        it.h = ratio;
+        it.el.style.filter = `brightness(${(1 - 0.22 * ratio).toFixed(3)}) saturate(${(1 + 0.25 * ratio).toFixed(3)})`;
+      }
+    }
+    const s = it.popped ? (1 + Math.max(0, it.z) / 220) : it.scale * (1 + it.z / 220);
+    it.el.style.transform = `translate(${(135 + it.x + jx).toFixed(2)}px, ${(135 + it.y + jy - it.z).toFixed(2)}px) translate(-50%,-50%) rotate(${it.rot.toFixed(1)}deg) scale(${s.toFixed(3)})`;
+  }
+  renderHud();
+}
+
+/* ---------- loop ---------- */
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  render(dt);
+  requestAnimationFrame(frame);
+}
+
+/* ---------- boot ---------- */
+document.querySelectorAll('#logo .c').forEach((c, i) => c.style.animationDelay = (0.08 + i * 0.07) + 's');
+applyText();
+goReady(true);
+setPhase('title');
+layout();
+const fontsIn = () => { app.classList.remove('fontwait'); layout(); };
+(document.fonts?.ready || Promise.resolve()).then(fontsIn);
+setTimeout(fontsIn, 1500);
+requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); });
+})();
+</script>
+</body>
+</html>
